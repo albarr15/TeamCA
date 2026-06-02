@@ -66,7 +66,9 @@ const runClockInReminders = async () => {
       message: `Your scheduled clock-in time is ${reminder.clockInReminderTime}. Don't forget to log your attendance.`,
     });
 
-    emitUserNotification(userId, notification);
+    if (notification) {
+      emitUserNotification(userId, notification);
+    }
   }
 };
 
@@ -111,7 +113,9 @@ const runClockOutReminders = async () => {
       message: `Your shift ends at ${toLocalHHMM(expectedEnd, tz)}. Please clock out in ${reminder.clockOutReminderMinutes} minutes.`,
     });
 
-    emitUserNotification(userId, notification);
+    if (notification) {
+      emitUserNotification(userId, notification);
+    }
   }
 };
 

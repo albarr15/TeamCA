@@ -18,6 +18,7 @@ export type NotificationEventType =
   | "task_deleted"
   | "task_due_today"
   | "task_overdue"
+  | "task_review_required"
   // ── existing user events ──────────────────────────────────────────────────
   | "user_profile_updated"
   | "user_role_changed"
@@ -72,6 +73,7 @@ const notificationSchema = new Schema<INotification>({
       "task_deleted",
       "task_due_today",
       "task_overdue",
+      "task_review_required",
       // user
       "user_profile_updated",
       "user_role_changed",
@@ -101,6 +103,11 @@ const notificationSchema = new Schema<INotification>({
 
 notificationSchema.index({ recipient_id: 1, created_at: -1 });
 notificationSchema.index({ recipient_id: 1, is_read: 1, created_at: -1 });
+// Used by the deduplication query in notificationService
+notificationSchema.index(
+  { recipient_id: 1, event_type: 1, entity_id: 1, created_at: -1 },
+  { name: "dedup_lookup" },
+);
 
 export default mongoose.model<INotification>(
   "Notification",

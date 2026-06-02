@@ -652,6 +652,22 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
     }
 
     const payload = updateTaskStatusSchema.parse(req.body);
+
+    // Layer 1 guard: fetch current status before the update to short-circuit
+    // duplicate calls that arrive before the DB write is visible. This prevents
+    // the notification pipeline from firing when the status hasn't actually changed.
+    const existingTask = await Task.findById(taskId)
+      .select("status")
+      .lean();
+    if (!existingTask) {
+      return res.status(404).json({ message: "Task not found." });
+    }
+    if (existingTask.status === payload.status) {
+      return res
+        .status(400)
+        .json({ message: "Task is already in the requested status." });
+    }
+
     const updated = await updateTaskStatus(req.user, {
       taskId,
       newStatus: payload.status,
