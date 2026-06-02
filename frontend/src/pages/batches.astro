@@ -1,0 +1,12 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+import BatchesPage from "@/features/batches/BatchesPage";
+---
+
+<DashboardLayout
+  pageTitle="Internship Batches"
+  requiredAuthentication={true}
+  allowedGlobalRoles={["Superadmin", "Admin"]}
+>
+  <BatchesPage client:load />
+</DashboardLayout>

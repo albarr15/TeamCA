@@ -11,6 +11,7 @@ import CalendarWidget from '../../components/widgets/CalendarWidget';
 import DtrAnalyticsWidget from '../../components/widgets/DtrAnalyticsWidget';
 import TaskBriefWidget from '../../components/widgets/TaskBriefWidget';
 import MembersBriefWidget from '../../components/widgets/MembersBriefWidget';
+import BatchesBriefWidget from '../../components/widgets/BatchesBriefWidget';
 import { CalendarSkeleton, StatCardSkeleton } from '../../components/ui/Skeleton';
 import { useUserDirectorySocket } from '../../hooks/useUserDirectorySocket';
 import { useTaskListSocket } from '../../hooks/useTaskListSocket';
@@ -142,6 +143,10 @@ export default function RoleDashboard() {
               members={membersForBrief}
               isLoading={isLoading}
             />
+          ) : null}
+
+          {(user?.global_role === 'Superadmin' || user?.global_role === 'Admin') ? (
+            <BatchesBriefWidget />
           ) : null}
         </div>
 

@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { TaskPriority, TaskStatus } from '../../../types/task';
+import type { Batch } from '../../../types/batch';
+import { batchService } from '../../../services/batchService';
 
 type CreatedDateFilter = 'all' | 'today' | '7d' | '30d';
 type SortBy = 'created_desc' | 'created_asc' | 'priority_desc' | 'priority_asc' | 'deadline_asc' | 'deadline_desc' | 'title_asc';
@@ -11,12 +13,14 @@ type TaskFiltersProps = {
   createdDate: CreatedDateFilter;
   sortBy: SortBy;
   limit: number;
+  batchId: string;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: TaskStatus | 'All') => void;
   onPriorityChange: (value: TaskPriority | 'All') => void;
   onCreatedDateChange: (value: CreatedDateFilter) => void;
   onSortByChange: (value: SortBy) => void;
   onLimitChange: (value: number) => void;
+  onBatchChange: (value: string) => void;
   deleteMode: boolean;
   selectedDeleteCount: number;
   onDeleteModeClick: () => void;
@@ -29,22 +33,43 @@ export default function TaskFilters({
   createdDate,
   sortBy,
   limit,
+  batchId,
   onSearchChange,
   onStatusChange,
   onPriorityChange,
   onCreatedDateChange,
   onSortByChange,
   onLimitChange,
+  onBatchChange,
   deleteMode,
   selectedDeleteCount,
   onDeleteModeClick,
 }: TaskFiltersProps) {
+  const [batches, setBatches] = useState<Batch[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    batchService
+      .list('all')
+      .then((items) => {
+        if (!cancelled) setBatches(items.filter((b) => !b.is_archived));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const selectClassName = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100';
   const labelClassName = 'text-xs font-semibold uppercase tracking-wide text-slate-500';
 
   const hasActiveFilters = useMemo(
-    () => search.trim().length > 0 || status !== 'All' || priority !== 'All' || createdDate !== 'all',
-    [search, status, priority, createdDate],
+    () =>
+      search.trim().length > 0 ||
+      status !== 'All' ||
+      priority !== 'All' ||
+      createdDate !== 'all' ||
+      batchId !== '',
+    [search, status, priority, createdDate, batchId],
   );
 
   const clearAllFilters = () => {
@@ -52,6 +77,7 @@ export default function TaskFilters({
     onStatusChange('All');
     onPriorityChange('All');
     onCreatedDateChange('all');
+    onBatchChange('');
   };
 
   return (
@@ -124,6 +150,22 @@ export default function TaskFilters({
             <option value="deadline_asc">Deadline (Soonest)</option>
             <option value="deadline_desc">Deadline (Latest)</option>
             <option value="title_asc">Title (A-Z)</option>
+          </select>
+        </label>
+
+        <label className="block space-y-1">
+          <span className={labelClassName}>Batch</span>
+          <select
+            className={selectClassName}
+            value={batchId}
+            onChange={(event) => onBatchChange(event.target.value)}
+          >
+            <option value="">All</option>
+            {batches.map((b) => (
+              <option key={b.batch_id} value={b.batch_id}>
+                {b.name}
+              </option>
+            ))}
           </select>
         </label>
 

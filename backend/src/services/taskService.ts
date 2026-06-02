@@ -88,6 +88,7 @@ export type ListTasksInput = {
     | "deadline_asc"
     | "deadline_desc"
     | "title_asc";
+  batchUserIds?: string[];
 };
 
 export type TaskLinkPermissions = {
@@ -929,6 +930,10 @@ export const listAccessibleTasksPaginated = async (
   const startOf7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const startOf30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+  const batchUserSet = input.batchUserIds && input.batchUserIds.length > 0
+    ? new Set(input.batchUserIds.map(String))
+    : null;
+
   const filtered = allTasks.filter((task) => {
     if (input.status && task.status !== input.status) {
       return false;
@@ -936,6 +941,12 @@ export const listAccessibleTasksPaginated = async (
 
     if (input.priority && task.priority !== input.priority) {
       return false;
+    }
+
+    if (batchUserSet) {
+      const assignees = assigneeMap.get(String(task.task_id)) ?? [];
+      const matches = assignees.some((id) => batchUserSet.has(String(id)));
+      if (!matches) return false;
     }
 
     const createdAt = new Date(task.created_at);

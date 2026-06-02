@@ -10,6 +10,7 @@ import leaveRoutes from "./leaveRoutes.js";
 import taskRoutes from "./taskRoutes.js";
 import activityRoutes from "./activityRoutes.js";
 import taskTemplateRoutes from "./taskTemplateRoutes.js";
+import batchRoutes from "./batchRoutes.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use("/activity-logs", activityRoutes);
 router.use("/dtr", dtrRoutes);
 router.use("/leave", leaveRoutes);
 router.use("/task-templates", taskTemplateRoutes);
+router.use("/batches", batchRoutes);
 
 export default router;

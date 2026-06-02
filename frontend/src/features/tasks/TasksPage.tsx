@@ -148,6 +148,7 @@ export default function TasksPage() {
   const [sortBy, setSortBy] = useState<SortBy>('created_desc');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [batchFilter, setBatchFilter] = useState('');
 
   const [taskList, setTaskList] = useState<PaginatedTaskListResponse>(DEFAULT_LIST);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -369,6 +370,7 @@ export default function TasksPage() {
         priority: priorityFilter === 'All' ? undefined : priorityFilter,
         created_date: createdDateFilter,
         sort_by: sortBy,
+        batch_id: batchFilter || undefined,
       });
 
       setTaskList(payload);
@@ -382,7 +384,7 @@ export default function TasksPage() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [createdDateFilter, limit, page, priorityFilter, search, sortBy, statusFilter]);
+  }, [batchFilter, createdDateFilter, limit, page, priorityFilter, search, sortBy, statusFilter]);
 
   const loadTaskDetail = useCallback(async (taskId: string) => {
     setDetailLoading(true);
@@ -427,7 +429,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, priorityFilter, createdDateFilter, sortBy, limit]);
+  }, [search, statusFilter, priorityFilter, createdDateFilter, sortBy, limit, batchFilter]);
 
   useEffect(() => {
     if (!selectedTaskId) {
@@ -1151,12 +1153,14 @@ export default function TasksPage() {
         createdDate={createdDateFilter}
         sortBy={sortBy}
         limit={limit}
+        batchId={batchFilter}
         onSearchChange={setSearch}
         onStatusChange={setStatusFilter}
         onPriorityChange={setPriorityFilter}
         onCreatedDateChange={setCreatedDateFilter}
         onSortByChange={setSortBy}
         onLimitChange={setLimit}
+        onBatchChange={setBatchFilter}
         deleteMode={isDeleteMode}
         selectedDeleteCount={selectedTaskIds.length}
         onDeleteModeClick={handleDeleteModeClick}

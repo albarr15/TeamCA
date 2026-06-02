@@ -28,6 +28,7 @@ const buildListQueryParams = (query?: TaskListQuery) => ({
   search: query?.search,
   created_date: query?.created_date ?? "all",
   sort_by: query?.sort_by ?? "created_desc",
+  batch_id: query?.batch_id,
 });
 
 export const taskService = {

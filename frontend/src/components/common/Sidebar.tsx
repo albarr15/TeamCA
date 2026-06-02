@@ -154,6 +154,13 @@ const NAV_ITEM_DEFS: NavItemDef[] = [
     allowedDepartmentRoles: ['Head', 'Supervisor'],
     section: 'admin',
   },
+  {
+    label: 'Batches',
+    href: '/batches',
+    icon: <UsersIcon />,
+    allowedGlobalRoles: ['Superadmin', 'Admin'],
+    section: 'admin',
+  },
 
   // ── superadmin-only ──────────────────────────────────────────────────────────
   // Matches backend: requireGlobalRole("Superadmin")
