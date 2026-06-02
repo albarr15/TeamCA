@@ -38,12 +38,14 @@ export const timeIn = async (req: AuthRequest, res: Response) => {
 export const timeOut = async (req: AuthRequest, res: Response) => {
   try {
     const userId = getUserId(req);
-    const schema = z.object({ remarks: z.string().min(1) });
+    const schema = z.object({
+      remarks: z.string().min(1, "Activity log is required to clock out."),
+    });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
       return res
         .status(400)
-        .json({ success: false, message: "Invalid payload" });
+        .json({ success: false, message: parsed.error.errors[0]?.message ?? "Invalid payload" });
     }
 
     const { remarks } = parsed.data;

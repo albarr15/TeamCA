@@ -44,9 +44,12 @@ export default function DTRPage() {
   const [loading, setLoading] = useState(true);
 
   const [open, setOpen] = useState(false);
-  const [remarks, setRemarks] = useState("");
-  const [remarksError, setRemarksError] = useState<string | null>(null);
+  const [activityLog, setActivityLog] = useState("");
+  const [activityLogError, setActivityLogError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showActivityWarning, setShowActivityWarning] = useState(false);
+
+  const MIN_ACTIVITY_LENGTH = 20;
   const [showExportModal, setShowExportModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
@@ -251,34 +254,48 @@ export default function DTRPage() {
   };
 
   const handleOpenClockOut = () => {
-    setRemarksError(null);
+    setActivityLogError(null);
+    setShowActivityWarning(false);
     setOpen(true);
   };
 
-  const handleSubmitClockOut = async () => {
-    const trimmedRemarks = remarks.trim();
-    if (!trimmedRemarks) {
-      setRemarksError("Remarks are required to clock out.");
-      return;
-    }
-
+  const doClockOut = async () => {
+    const trimmed = activityLog.trim();
     try {
       setSubmitting(true);
       setActionError(null);
-      setRemarksError(null);
+      setActivityLogError(null);
 
-      await clockOut(trimmedRemarks);
+      await clockOut(trimmed);
 
-      setRemarks("");
+      setActivityLog("");
       setOpen(false);
+      setShowActivityWarning(false);
       window.location.reload();
     } catch (err) {
       const message = (err as any)?.response?.data?.message ||
         (err instanceof Error ? err.message : "Failed to clock out");
-      setRemarksError(message);
+      setActivityLogError(message);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSubmitClockOut = async () => {
+    const trimmed = activityLog.trim();
+
+    if (!trimmed) {
+      setActivityLogError("Please describe what you worked on today before clocking out.");
+      return;
+    }
+
+    if (trimmed.length < MIN_ACTIVITY_LENGTH) {
+      // Show warning confirmation modal instead of hard blocking
+      setShowActivityWarning(true);
+      return;
+    }
+
+    await doClockOut();
   };
 
   const handleStartBreak = async () => {
@@ -429,43 +446,93 @@ export default function DTRPage() {
       </Card>
 
       {/* CLOCK OUT MODAL */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setShowActivityWarning(false); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Clock Out</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Please describe what you accomplished today.
-            </p>
-            {remarksError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {remarksError}
+
+          {showActivityWarning ? (
+            /* ── Confirmation: activity log is too short ── */
+            <div className="space-y-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <p className="font-semibold mb-1">Activity log is too brief</p>
+                <p>
+                  Your activity log is very short ({activityLog.trim().length} characters).
+                  A detailed log helps your supervisors track your work accurately.
+                </p>
               </div>
-            )}
-            <textarea
-              value={remarks}
-              onChange={(e) => {
-                setRemarks(e.target.value);
-                if (remarksError) setRemarksError(null);
-              }}
-              placeholder="e.g. Finished dashboard UI, fixed bugs..."
-              className="w-full border rounded-md p-2 text-sm min-h-[120px]"
-              maxLength={300}
-            />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmitClockOut}
-                disabled={!remarks.trim() || submitting}
-                variant="danger"
-              >
-                {submitting ? "Submitting..." : "Submit & Clock Out"}
-              </Button>
+              <p className="text-sm text-slate-600">
+                Would you like to go back and add more detail, or clock out anyway?
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowActivityWarning(false)}
+                  disabled={submitting}
+                >
+                  Add More Detail
+                </Button>
+                <Button
+                  onClick={doClockOut}
+                  disabled={submitting}
+                  variant="danger"
+                >
+                  {submitting ? "Submitting..." : "Clock Out Anyway"}
+                </Button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* ── Activity log form ── */
+            <div className="space-y-4">
+              <p className="text-sm text-slate-600">
+                What did you accomplish today? A brief activity log is required before clocking out.
+              </p>
+              {activityLogError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {activityLogError}
+                </div>
+              )}
+              <div className="space-y-1">
+                <textarea
+                  value={activityLog}
+                  onChange={(e) => {
+                    setActivityLog(e.target.value);
+                    if (activityLogError) setActivityLogError(null);
+                  }}
+                  placeholder="e.g. Completed the dashboard UI redesign, fixed 3 reported bugs in the login flow, attended team standup..."
+                  className="w-full border rounded-md p-2 text-sm min-h-[120px] resize-y"
+                  maxLength={500}
+                />
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>
+                    {activityLog.trim().length < MIN_ACTIVITY_LENGTH && activityLog.trim().length > 0 && (
+                      <span className="text-amber-500">
+                        {MIN_ACTIVITY_LENGTH - activityLog.trim().length} more characters recommended
+                      </span>
+                    )}
+                  </span>
+                  <span>{activityLog.length}/500</span>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitClockOut}
+                  disabled={!activityLog.trim() || submitting}
+                  variant="danger"
+                >
+                  {submitting ? "Submitting..." : "Submit & Clock Out"}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

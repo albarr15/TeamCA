@@ -177,6 +177,9 @@ export const timeOut = async (userId: string, remarks: string) => {
   lastClock.timeOut = now;
   lastClock.remarks = remarks;
 
+  // Also persist on the DTR document level so activity is visible in history and detail views
+  dtr.remarks = remarks;
+
   let totalMinutes = (now.getTime() - lastClock.timeIn.getTime()) / 60000;
   if (lastClock.breaks && lastClock.breaks.length > 0) {
     const breakMinutes = lastClock.breaks.reduce((sum: number, b: any) => sum + (b.duration || 0), 0);
