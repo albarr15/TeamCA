@@ -44,6 +44,10 @@ export const ROUTE_ACCESS_MAP: Record<string, RouteAccess> = {
     allowedGlobalRoles: ["Superadmin", "Admin"],
     allowedDepartmentRoles: ["Head", "Supervisor"],
   },
+  "/batches": {
+    label: "Internship Batches",
+    allowedGlobalRoles: ["Superadmin", "Admin"],
+  },
 
   // ── superadmin-only ──────────────────────────────────────────────────────────
   // Mirrors backend: requireGlobalRole("Superadmin")

@@ -21,6 +21,10 @@ import {
   optionalActivityText,
   safeActivityText,
 } from "../utils/activityLogPayload.js";
+import {
+  assignUserToBatches,
+  getUserIdsInBatch,
+} from "../services/batchService.js";
 
 type AuthUser = NonNullable<Request["user"]>;
 
@@ -163,19 +167,32 @@ export const getUsers = async (req: Request, res: Response) => {
         .json({ message: "Insufficient role permissions." });
     }
 
+    const batchIdFilter = typeof req.query.batch_id === "string"
+      ? req.query.batch_id.trim()
+      : "";
+    const batchUserIds = batchIdFilter
+      ? await getUserIdsInBatch(batchIdFilter)
+      : null;
+
     let users;
     if (isGlobalManager) {
-      users = await User.find({}, "-password_hash");
-    } else if (isDepartmentScoped && req.user.department_id) {
       users = await User.find(
-        {
-          is_active: true,
-          departments: {
-            $elemMatch: {
-              department_id: req.user.department_id,
-            },
+        batchUserIds ? { _id: { $in: batchUserIds } } : {},
+        "-password_hash",
+      );
+    } else if (isDepartmentScoped && req.user.department_id) {
+      const departmentFilter = {
+        is_active: true,
+        departments: {
+          $elemMatch: {
+            department_id: req.user.department_id,
           },
         },
+      };
+      users = await User.find(
+        batchUserIds
+          ? { ...departmentFilter, _id: { $in: batchUserIds } }
+          : departmentFilter,
         "-password_hash",
       );
     } else {
@@ -260,6 +277,17 @@ export const createUser = async (req: Request, res: Response) => {
       working_days,
       departments: normalizedDepartments,
     });
+
+    const batchIds: string[] = Array.isArray(req.body?.batch_ids)
+      ? req.body.batch_ids.filter((id: unknown) => typeof id === "string" && id.trim().length > 0)
+      : [];
+    if (batchIds.length > 0) {
+      try {
+        await assignUserToBatches(getUserActivityId(newUser, "new-user"), batchIds);
+      } catch (_err) {
+        // batch assignment failure shouldn't block user creation; surfaced separately by the UI
+      }
+    }
 
     const targetUserId = getUserActivityId(newUser, "new-user");
     await logActivityForRequest(req, {
@@ -398,6 +426,17 @@ export const activateWhitelistedUserHandler = async (
       department_id,
       department_role: department_role as "Head" | "Supervisor" | "Intern",
     });
+
+    const batchIds: string[] = Array.isArray(req.body?.batch_ids)
+      ? req.body.batch_ids.filter((id: unknown) => typeof id === "string" && id.trim().length > 0)
+      : [];
+    if (batchIds.length > 0 && department_role === "Intern") {
+      try {
+        await assignUserToBatches(getUserActivityId(user, userId), batchIds);
+      } catch (_err) {
+        // non-fatal
+      }
+    }
 
     await logActivityForRequest(req, {
       action_type: "update",

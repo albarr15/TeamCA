@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { userService } from "@/services/userService";
 import { departmentService } from "@/services/departmentService";
+import { batchService } from "@/services/batchService";
 import type { Department } from "@/types/user";
+import type { Batch } from "@/types/batch";
 import { NumberInput } from "@/components/ui/input/NumberInput";
 import { TimeRangeInput } from "@/components/ui/input/TimeRangeInput";
 
@@ -35,9 +37,11 @@ export default function AddUserModal({ open, onClose, onSuccess }: Props) {
       end: "",
     },
     working_days: [] as string[],
+    batch_ids: [] as string[],
   });
 
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,7 +57,17 @@ export default function AddUserModal({ open, onClose, onSuccess }: Props) {
       }
     };
 
+    const fetchBatches = async () => {
+      try {
+        const data = await batchService.list("active");
+        setBatches(data);
+      } catch (_err) {
+        // non-fatal
+      }
+    };
+
     fetchDepartments();
+    fetchBatches();
   }, [open]);
 
   const handleWhitelistToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,7 +134,10 @@ export default function AddUserModal({ open, onClose, onSuccess }: Props) {
           global_role: form.global_role as "Admin" | "Standard_User",
           department_id: form.department_id,
           department_role: form.department_role as "Head" | "Supervisor" | "Intern",
-        });
+          ...(form.department_role === "Intern" && form.batch_ids.length > 0
+            ? { batch_ids: form.batch_ids }
+            : {}),
+        } as any);
         onSuccess();
         onClose();
 
@@ -136,6 +153,7 @@ export default function AddUserModal({ open, onClose, onSuccess }: Props) {
           required_hours: 8,
           working_hours: { start: "08:00", end: "17:00" },
           working_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          batch_ids: [],
         });
         setIsWhitelist(false);
       } catch (err: any) {
@@ -175,6 +193,9 @@ export default function AddUserModal({ open, onClose, onSuccess }: Props) {
               },
             ]
           : [],
+        ...(form.department_role === "Intern" && form.batch_ids.length > 0
+          ? { batch_ids: form.batch_ids }
+          : {}),
       };
 
       await userService.createUser(payload);
@@ -194,6 +215,7 @@ export default function AddUserModal({ open, onClose, onSuccess }: Props) {
         required_hours: 0,
         working_hours: { start: "", end: "" },
         working_days: [],
+        batch_ids: [],
       });
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to create user.");
@@ -362,6 +384,38 @@ export default function AddUserModal({ open, onClose, onSuccess }: Props) {
               </select>
             </div>
           </div>
+
+          {form.department_role === "Intern" && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Internship Batch
+              </label>
+              {batches.length === 0 ? (
+                <p className="text-xs text-slate-500">
+                  No active batches available. Create one in the Batches page.
+                </p>
+              ) : (
+                <select
+                  value={form.batch_ids[0] ?? ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      batch_ids: e.target.value ? [e.target.value] : [],
+                    }))
+                  }
+                  className="w-full h-10 rounded-lg border px-3 text-sm text-slate-700 bg-white"
+                >
+                  <option value="">— None —</option>
+                  {batches.map((b) => (
+                    <option key={b.batch_id} value={b.batch_id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-xs text-slate-500">Interns can belong to one batch at a time.</p>
+            </div>
+          )}
 
           {/*  SCHEDULE SECTION */}
           <div className="space-y-4 pt-4 border-t">

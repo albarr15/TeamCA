@@ -31,6 +31,7 @@ import {
   emitTaskStatusUpdated,
   emitUsersNotification,
 } from "../socket/io.js";
+import { getUserIdsInBatch } from "../services/batchService.js";
 import {
   compactActivityChanges,
   logActivityForRequest,
@@ -166,6 +167,7 @@ const listTasksQuerySchema = z.object({
       "title_asc",
     ])
     .default("created_desc"),
+  batch_id: z.string().trim().min(1).optional(),
 });
 
 const parseTaskId = (req: Request, res: Response): string | null => {
@@ -586,6 +588,10 @@ export const listTasksHandler = async (req: Request, res: Response) => {
       return res.status(200).json(tasks);
     }
 
+    const batchUserIds = query.batch_id
+      ? await getUserIdsInBatch(query.batch_id)
+      : undefined;
+
     const payload = await listAccessibleTasksPaginated(req.user, {
       page: query.page,
       limit: query.limit,
@@ -594,6 +600,7 @@ export const listTasksHandler = async (req: Request, res: Response) => {
       search: query.search,
       createdDate: query.created_date,
       sortBy: query.sort_by,
+      batchUserIds,
     });
 
     for (const task of payload.items) {

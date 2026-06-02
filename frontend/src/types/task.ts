@@ -170,4 +170,5 @@ export interface TaskListQuery {
     | "deadline_asc"
     | "deadline_desc"
     | "title_asc";
+  batch_id?: string;
 }
