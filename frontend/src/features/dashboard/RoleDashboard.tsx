@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { userService } from '../../services/userService';
 import { taskService } from '../../services/taskService';
@@ -12,6 +12,8 @@ import DtrAnalyticsWidget from '../../components/widgets/DtrAnalyticsWidget';
 import TaskBriefWidget from '../../components/widgets/TaskBriefWidget';
 import MembersBriefWidget from '../../components/widgets/MembersBriefWidget';
 import { CalendarSkeleton, StatCardSkeleton } from '../../components/ui/Skeleton';
+import { useUserDirectorySocket } from '../../hooks/useUserDirectorySocket';
+import { useTaskListSocket } from '../../hooks/useTaskListSocket';
 
 export default function RoleDashboard() {
   const { user, isIntern, canManageOwnDepartment, canViewAllDepartments } = useAuthStore((state) => ({
@@ -48,6 +50,28 @@ export default function RoleDashboard() {
 
     void loadDashboardData();
   }, [canManageOwnDepartment, canViewAllDepartments, user]);
+
+  // Refresh user list silently when the directory changes
+  const refreshUsers = useCallback(() => {
+    if (!user) return;
+    if (!canViewAllDepartments() && !canManageOwnDepartment()) return;
+    void userService
+      .getAllUsers()
+      .then((latest) => setUsers(latest))
+      .catch(() => {});
+  }, [canManageOwnDepartment, canViewAllDepartments, user]);
+
+  useUserDirectorySocket(refreshUsers);
+
+  const refreshTasks = useCallback(() => {
+    if (!user) return;
+    void taskService
+      .getTasks()
+      .then((latest) => setTasks(latest))
+      .catch(() => {});
+  }, [user]);
+
+  useTaskListSocket(refreshTasks);
 
   const visibleTasks = useMemo(() => {
     if (!user) {

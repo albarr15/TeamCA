@@ -25,6 +25,8 @@ import TaskPagination from './components/TaskPagination';
 import TaskTable from './components/TaskTable';
 import { useTaskSocket } from './hooks/useTaskSocket';
 import { TableHeaderSkeleton, TableRowSkeleton } from '../../components/ui/Skeleton';
+import { useUserDirectorySocket } from '../../hooks/useUserDirectorySocket';
+import { useTaskListSocket } from '../../hooks/useTaskListSocket';
 
 type CreatedDateFilter = 'all' | 'today' | '7d' | '30d';
 type SortBy = 'created_desc' | 'created_asc' | 'priority_desc' | 'priority_asc' | 'deadline_asc' | 'deadline_desc' | 'title_asc';
@@ -437,30 +439,49 @@ export default function TasksPage() {
     void loadTaskDetail(selectedTaskId);
   }, [loadTaskDetail, selectedTaskId]);
 
+  const fetchAssignableUsers = useCallback(
+    (showLoading: boolean = true) => {
+      if (!isAuthenticated) return;
+
+      const canFetchAllUsers = isSuperadmin
+        || isAdmin
+        || currentDepartmentRole === 'Head'
+        || currentDepartmentRole === 'Supervisor'
+        || currentDepartmentRole === 'Intern';
+      if (!canFetchAllUsers) {
+        setAllUsers(currentUser ? [currentUser] : []);
+        setCreateError('');
+        setUsersLoading(false);
+        return;
+      }
+
+      if (showLoading) setUsersLoading(true);
+      void userService
+        .getAllUsers()
+        .then((users) => setAllUsers(users))
+        .catch(() => setCreateError('Failed to load assignable users.'))
+        .finally(() => {
+          if (showLoading) setUsersLoading(false);
+        });
+    },
+    [currentDepartmentRole, currentUser, isAdmin, isAuthenticated, isSuperadmin],
+  );
+
   useEffect(() => {
     if (!isCreateModalOpen || !isAuthenticated) {
       return;
     }
+    fetchAssignableUsers(true);
+  }, [fetchAssignableUsers, isAuthenticated, isCreateModalOpen]);
 
-    const canFetchAllUsers = isSuperadmin
-      || isAdmin
-      || currentDepartmentRole === 'Head'
-      || currentDepartmentRole === 'Supervisor'
-      || currentDepartmentRole === 'Intern';
-    if (!canFetchAllUsers) {
-      setAllUsers(currentUser ? [currentUser] : []);
-      setCreateError('');
-      setUsersLoading(false);
-      return;
-    }
+  // Refresh assignee picker silently if the directory changes while the
+  // create modal is open.
+  const handleDirectoryUpdate = useCallback(() => {
+    if (!isCreateModalOpen) return;
+    fetchAssignableUsers(false);
+  }, [fetchAssignableUsers, isCreateModalOpen]);
 
-    setUsersLoading(true);
-    void userService
-      .getAllUsers()
-      .then((users) => setAllUsers(users))
-      .catch(() => setCreateError('Failed to load assignable users.'))
-      .finally(() => setUsersLoading(false));
-  }, [currentDepartmentRole, currentUser, isAdmin, isAuthenticated, isCreateModalOpen, isSuperadmin]);
+  useUserDirectorySocket(handleDirectoryUpdate);
 
   useEffect(() => {
     if (!isCreateModalOpen || !resolvedCurrentUserId) {
@@ -600,6 +621,10 @@ export default function TasksPage() {
     onCommentCreated: handleSocketComment,
     onStatusUpdated: handleSocketStatus,
   });
+
+  useTaskListSocket(useCallback(() => {
+    void loadTasks({ refresh: true });
+  }, [loadTasks]));
 
   if (!mounted) {
     return null;

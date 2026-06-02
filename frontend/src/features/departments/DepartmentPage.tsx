@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Edit2, Trash2, Users } from 'lucide-react';
 import { departmentService } from '../../services/departmentService';
 import { userService } from '../../services/userService';
@@ -10,6 +10,7 @@ import Card from '../../components/ui/Card';
 import type { Department, User } from '../../types/user';
 import { WidgetSkeleton } from '../../components/ui/Skeleton';
 import DepartmentDetailModal from './DepartmentDetailModal';
+import { useUserDirectorySocket } from '../../hooks/useUserDirectorySocket';
 
 const DEPARTMENTS_PER_PAGE = 8;
 
@@ -54,6 +55,16 @@ export default function DepartmentPage() {
       fetchUsers();
     }
   }, [isSuperadmin, isAdmin]);
+
+  // Live refresh: when users are created/updated/deleted elsewhere,
+  // re-pull the head dropdown options.
+  const handleDirectoryUpdate = useCallback(() => {
+    if (isSuperadmin || isAdmin) {
+      fetchUsers();
+    }
+  }, [isSuperadmin, isAdmin]);
+
+  useUserDirectorySocket(handleDirectoryUpdate);
 
   const fetchDepartments = async () => {
     try {

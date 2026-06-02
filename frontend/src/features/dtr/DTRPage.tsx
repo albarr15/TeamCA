@@ -58,6 +58,9 @@ export default function DTRPage() {
   const [breakLoading, setBreakLoading] = useState(false);
   const [breakStartTime, setBreakStartTime] = useState<Date | null>(null);
 
+  // Re-render tick so the Hours Worked timer advances while clocked in
+  const [, setNowTick] = useState(0);
+
   // History state — DTRHistoryItem union supports both DTR rows and leave rows
   const [historyRecords, setHistoryRecords] = useState<DTRHistoryItem[]>([]);
   const [historyPage, setHistoryPage] = useState(1);
@@ -184,6 +187,16 @@ export default function DTRPage() {
 
     return () => clearInterval(interval);
   }, [clockedIn, breakStartTime]);
+
+  React.useEffect(() => {
+    if (!isClockedIn) return;
+
+    const interval = setInterval(() => {
+      setNowTick((tick) => tick + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isClockedIn]);
 
   if (!mounted) return null;
 

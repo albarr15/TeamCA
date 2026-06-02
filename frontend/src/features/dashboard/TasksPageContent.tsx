@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { taskService } from '../../services/taskService';
 import { useAuthStore } from '../../store/authStore';
 import type { Task } from '../../types/task';
@@ -6,6 +6,7 @@ import StatCard from '../../components/widgets/StatCard';
 import TaskBriefWidget from '../../components/widgets/TaskBriefWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { ActivityListItemSkeleton } from '../../components/ui/Skeleton';
+import { useTaskListSocket } from '../../hooks/useTaskListSocket';
 
 export default function TasksPageContent() {
   const { user, canManageOwnDepartment, canViewAllDepartments } = useAuthStore((state) => ({
@@ -32,6 +33,15 @@ export default function TasksPageContent() {
 
     void loadTasks();
   }, []);
+
+  const refreshTasks = useCallback(() => {
+    void taskService
+      .getTasks()
+      .then((latest) => setTasks(latest))
+      .catch(() => {});
+  }, []);
+
+  useTaskListSocket(refreshTasks);
 
   const visibleTasks = useMemo(() => {
     if (!user) {

@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { leaveService } from '../../services/leaveService';
 import type { ILeave, IReviewHistoryEntry } from '../../types/leave';
+import { useLeaveSocket, type LeaveSocketPayload } from './hooks/useLeaveSocket';
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
 
@@ -213,6 +214,32 @@ export default function LeaveApprovalPanel() {
       fetchPending();
     }
   }, [isAdmin, isHead, fetchPending]);
+
+  // ── live updates from backend ────────────────────────────────────────────
+  // Reviewers need to see new pending leaves immediately and have
+  // approved/rejected/cancelled leaves drop out of the queue without a refetch.
+  // Heads only see their own department(s); rely on fetchPending for the
+  // initial scope, but for incoming `leave_submitted` updates that aren't
+  // already in the list, refetch so the server-side filter applies.
+  const handleLeaveSocket = useCallback(
+    (payload: LeaveSocketPayload) => {
+      if (!isAdmin && !isHead) return;
+
+      if (payload.event_type === 'leave_submitted') {
+        fetchPending();
+        return;
+      }
+
+      // approved | rejected | cancelled → drop from pending queue
+      setLeaves((prev) => prev.filter((l) => l._id !== payload.leave._id));
+      if (rejectTarget && rejectTarget._id === payload.leave._id) {
+        setRejectTarget(null);
+      }
+    },
+    [isAdmin, isHead, fetchPending, rejectTarget],
+  );
+
+  useLeaveSocket(handleLeaveSocket);
 
   // ── approve ─────────────────────────────────────────────────────────────────
   const handleApprove = async (leaveId: string) => {

@@ -170,3 +170,24 @@ export const emitUserDTRUpdated = (userId: string, payload: unknown) => {
 
   ioInstance.to(`user:${userId}`).emit("dtr:updated", payload);
 };
+
+export const emitUsersLeaveUpdated = (
+  userIds: string[],
+  payload: unknown,
+) => {
+  if (!ioInstance) {
+    return;
+  }
+
+  const uniqueUserIds = [
+    ...new Set(
+      userIds
+        .map((userId) => userId.trim())
+        .filter((userId) => userId.length > 0),
+    ),
+  ];
+
+  for (const userId of uniqueUserIds) {
+    ioInstance.to(`user:${userId}`).emit("leave:updated", payload);
+  }
+};

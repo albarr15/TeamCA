@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import Button from '../../components/ui/Button';
 import LeaveRequestForm from './LeaveRequestForm';
@@ -7,6 +7,7 @@ import LeaveApprovalPanel from './LeaveApprovalPanel';
 import { leaveService } from '../../services/leaveService';
 import type { ILeave, CreateLeavePayload } from '../../types/leave';
 import { StatCardSkeleton, ActivityListItemSkeleton } from '../../components/ui/Skeleton';
+import { useLeaveSocket, type LeaveSocketPayload } from './hooks/useLeaveSocket';
 
 export default function LeavePage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -47,6 +48,35 @@ export default function LeavePage() {
       fetchLeaves();
     }
   }, [isAuthenticated, mounted]);
+
+  // ── live updates from backend ────────────────────────────────────────────
+  // Only reconcile leaves that belong to the current user; reviewer-side
+  // updates are handled inside LeaveApprovalPanel.
+  const handleLeaveSocket = useCallback(
+    (payload: LeaveSocketPayload) => {
+      if (!user?._id) return;
+      if (String(payload.leave.userId) !== String(user._id)) return;
+
+      setLeaves((prev) => {
+        const idx = prev.findIndex((l) => l._id === payload.leave._id);
+        if (payload.event_type === 'leave_submitted') {
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = payload.leave;
+            return next;
+          }
+          return [payload.leave, ...prev];
+        }
+        if (idx < 0) return prev;
+        const next = [...prev];
+        next[idx] = payload.leave;
+        return next;
+      });
+    },
+    [user?._id],
+  );
+
+  useLeaveSocket(handleLeaveSocket);
 
   const handleCreateLeave = async (payload: CreateLeavePayload) => {
     try {

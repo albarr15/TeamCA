@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { userService } from "../../services/userService";
 import UserDirectory from "./UserDirectory";
 import type { User } from "../../types/user";
@@ -10,27 +10,32 @@ import {
   CardTitle,
 } from "../../components/ui/Card";
 import { StatCardSkeleton, WidgetSkeleton } from "../../components/ui/Skeleton";
+import { useUserDirectorySocket } from "../../hooks/useUserDirectorySocket";
 
 export default function SuperAdmin() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setIsLoading(true);
-        const data = await userService.getAllUsers();
-        setUsers(data);
-      } catch {
-        setError("Unable to load dashboard summary.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadUsers();
+  const loadUsers = useCallback(async (showLoading: boolean = true) => {
+    try {
+      if (showLoading) setIsLoading(true);
+      const data = await userService.getAllUsers();
+      setUsers(data);
+    } catch {
+      setError("Unable to load dashboard summary.");
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadUsers(true);
+  }, [loadUsers]);
+
+  useUserDirectorySocket(useCallback(() => {
+    void loadUsers(false);
+  }, [loadUsers]));
 
   const summary = useMemo(() => {
     const totalUsers = users.length;
