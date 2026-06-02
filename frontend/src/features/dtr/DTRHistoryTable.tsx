@@ -259,17 +259,18 @@ export default function DTRHistoryTable({
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Time Out</th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Status</th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Hours & Breaks</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Activity Log</th>
                 <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-slate-500">Loading...</td>
+                  <td colSpan={7} className="text-center py-8 text-slate-500">Loading...</td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-slate-500">No records found</td>
+                  <td colSpan={7} className="text-center py-8 text-slate-500">No records found</td>
                 </tr>
               ) : (
                 records.map((item) => {
@@ -322,6 +323,9 @@ export default function DTRHistoryTable({
                             ) : null}
                           </div>
                         </td>
+
+                        {/* No activity log for leave rows */}
+                        <td className="px-4 py-3 text-slate-300 text-xs">—</td>
 
                         {/* No actions for leave rows */}
                         <td className="px-4 py-3 text-center text-slate-300 text-xs">—</td>
@@ -378,6 +382,17 @@ export default function DTRHistoryTable({
                             breaks={primaryClock.breaks || []}
                             className="w-52"
                           />
+                        )}
+                      </td>
+
+                      {/* Activity Log */}
+                      <td className="px-4 py-3 max-w-[200px]">
+                        {primaryClock?.remarks ? (
+                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed" title={primaryClock.remarks}>
+                            {primaryClock.remarks}
+                          </p>
+                        ) : (
+                          <span className="text-xs text-slate-300 italic">No activity logged</span>
                         )}
                       </td>
 
