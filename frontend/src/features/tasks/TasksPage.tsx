@@ -640,7 +640,10 @@ export default function TasksPage() {
   const canDeleteOwnLink = !!taskDetail?.link_permissions.can_delete_own_links;
 
   const handleUpdateStatus = async (nextStatus: TaskStatus) => {
-    if (!taskDetail) {
+    // Layer 4 guard: drop the call immediately if a status update is already
+    // in-flight. Without this, a double-click dispatches two requests before
+    // the first setStatusUpdating(true) has had a chance to block the second.
+    if (!taskDetail || statusUpdating) {
       return;
     }
 
@@ -1034,7 +1037,9 @@ export default function TasksPage() {
   const handleSaveTaskDetails = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!taskDetail) {
+    // Layer 4 guard: drop the call immediately if a details save is already
+    // in-flight to prevent double-click from sending two identical PATCH calls.
+    if (!taskDetail || isSavingTaskDetails) {
       return;
     }
 
