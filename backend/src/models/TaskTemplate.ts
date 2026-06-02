@@ -3,11 +3,11 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ITaskTemplate extends Document {
   title: string;
   description?: string;
-  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  priority: 'Low' | 'Medium' | 'High';
   recurrenceRule: 'Daily' | 'Weekly' | 'Monthly' | 'Custom';
-  customRecurrenceDays?: number; // e.g., every X days
+  customRecurrenceDays?: number;
   defaultAssignee?: mongoose.Types.ObjectId;
-  departmentId: mongoose.Types.ObjectId;
+  departmentId?: mongoose.Types.ObjectId; // Now optional
   createdBy: mongoose.Types.ObjectId;
   isActive: boolean;
   createdAt: Date;
@@ -20,7 +20,7 @@ const TaskTemplateSchema: Schema = new Schema(
     description: { type: String },
     priority: { 
       type: String, 
-      enum: ['Low', 'Medium', 'High', 'Urgent'], 
+      enum: ['Low', 'Medium', 'High'], 
       default: 'Medium' 
     },
     recurrenceRule: { 
@@ -30,7 +30,7 @@ const TaskTemplateSchema: Schema = new Schema(
     },
     customRecurrenceDays: { type: Number },
     defaultAssignee: { type: Schema.Types.ObjectId, ref: 'User' },
-    departmentId: { type: Schema.Types.ObjectId, ref: 'Department', required: true },
+    departmentId: { type: Schema.Types.ObjectId, ref: 'Department', required: false }, // Removed strictly required
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     isActive: { type: Boolean, default: true },
   },
