@@ -75,6 +75,16 @@ const closeOpenClocksForToday = async (userId: string): Promise<void> => {
     dtr.totalHours = 0;
     dtr.undertimeHours = 0;
     await dtr.save();
+
+    try {
+      emitUserDTRUpdated(userId, {
+        event: "leave-auto-close",
+        dtrId: dtr._id,
+        date: dtr.date,
+        clocks: dtr.clocks,
+        totalHours: dtr.totalHours,
+      });
+    } catch (_err) {}
   }
 };
 

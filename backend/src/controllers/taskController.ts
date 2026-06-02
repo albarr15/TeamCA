@@ -318,6 +318,38 @@ export const createTaskHandler = async (req: Request, res: Response) => {
       actorFirstName,
     );
 
+    const assigneeIds = [
+      ...new Set(
+        created.assignments
+          .map((a) => String(a.assigned_to))
+          .filter((id) => id && id !== actorId),
+      ),
+    ];
+
+    if (assigneeIds.length > 0) {
+      const notifications = await createNotificationsForRecipients(
+        assigneeIds,
+        {
+          actorId,
+          eventType: "task_assignment_added",
+          title: "You were assigned a task",
+          message: `You were assigned to "${created.task.title}".`,
+          entityType: "task",
+          entityId: String(created.task.task_id),
+          metadata: {
+            task_id: String(created.task.task_id),
+            assignment_change: "added",
+            task_title: created.task.title,
+            task_status: created.task.status,
+          },
+        },
+      );
+
+      for (const notification of notifications) {
+        emitUsersNotification([notification.recipient_id], notification);
+      }
+    }
+
     return res.status(201).json(created);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -1225,12 +1257,19 @@ export const addTaskCommentHandler = async (req: Request, res: Response) => {
     });
 
     const [task, assigneeIds] = await Promise.all([
-      Task.findById(taskId).select("title").lean(),
+      Task.findById(taskId).select("title created_by").lean(),
       getTaskAssigneeIds(taskId),
     ]);
 
     const taskTitle = task?.title || `task ${taskId}`;
-    const notifications = await createNotificationsForRecipients(assigneeIds, {
+    const recipientIds = [
+      ...new Set([
+        ...assigneeIds,
+        ...(task?.created_by ? [String(task.created_by)] : []),
+      ]),
+    ];
+
+    const notifications = await createNotificationsForRecipients(recipientIds, {
       actorId: String(req.user.user_id),
       eventType: "task_comment_created",
       title: "New task comment",

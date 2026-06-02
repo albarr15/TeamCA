@@ -5,6 +5,31 @@ import Leave, { type ILeave, type LeaveStatus, type LeaveType } from "../models/
 import DTR from "../models/DTR";
 import User from "../models/User";
 import { createNotification, createNotificationsForRecipients } from "./notificationService";
+import { emitUsersLeaveUpdated, emitUserDTRUpdated } from "../socket/io";
+
+type LeaveEventType =
+  | "leave_submitted"
+  | "leave_approved"
+  | "leave_rejected"
+  | "leave_cancelled";
+
+const dispatchLeaveSocket = (
+  eventType: LeaveEventType,
+  recipientIds: string[],
+  actorId: string,
+  leave: ReturnType<typeof normalize>,
+) => {
+  try {
+    emitUsersLeaveUpdated(recipientIds, {
+      event_type: eventType,
+      leave,
+      actor_id: actorId,
+      updated_at: new Date().toISOString(),
+    });
+  } catch (_err) {
+    // socket errors are non-critical
+  }
+};
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -163,7 +188,14 @@ export const createLeave = async (input: CreateLeaveInput) => {
     });
   }
 
-  return normalize(leave);
+  const normalized = normalize(leave);
+  dispatchLeaveSocket(
+    "leave_submitted",
+    [input.userId, ...reviewerIds],
+    input.userId,
+    normalized,
+  );
+  return normalized;
 };
 
 /**
@@ -272,7 +304,17 @@ export const approveLeave = async (input: ReviewLeaveInput) => {
           modified = true;
         }
       });
-      if (modified) await dtrOnLeaveDay.save();
+      if (modified) {
+        await dtrOnLeaveDay.save();
+        try {
+          emitUserDTRUpdated(String(leave.userId), {
+            event: "leave-auto-close",
+            dtrId: dtrOnLeaveDay._id,
+            date: dtrOnLeaveDay.date,
+            clocks: dtrOnLeaveDay.clocks,
+          });
+        } catch (_err) {}
+      }
     }
   } catch (_err) {
     // Non-critical: don't block approval if DTR close fails
@@ -290,7 +332,17 @@ export const approveLeave = async (input: ReviewLeaveInput) => {
     metadata: { leaveId: String(leave._id), reviewerName: actorName },
   });
 
-  return normalize(leave);
+  const reviewerIds = await findReviewerIds(
+    leave.departmentId ? String(leave.departmentId) : undefined,
+  );
+  const normalized = normalize(leave);
+  dispatchLeaveSocket(
+    "leave_approved",
+    [String(leave.userId), input.actorId, ...reviewerIds],
+    input.actorId,
+    normalized,
+  );
+  return normalized;
 };
 
 /**
@@ -340,7 +392,17 @@ export const rejectLeave = async (input: ReviewLeaveInput) => {
     },
   });
 
-  return normalize(leave);
+  const reviewerIds = await findReviewerIds(
+    leave.departmentId ? String(leave.departmentId) : undefined,
+  );
+  const normalized = normalize(leave);
+  dispatchLeaveSocket(
+    "leave_rejected",
+    [String(leave.userId), input.actorId, ...reviewerIds],
+    input.actorId,
+    normalized,
+  );
+  return normalized;
 };
 
 /**
@@ -386,5 +448,12 @@ export const cancelLeave = async (userId: string, leaveId: string) => {
     });
   }
 
-  return normalize(leave);
+  const normalized = normalize(leave);
+  dispatchLeaveSocket(
+    "leave_cancelled",
+    [userId, ...reviewerIds],
+    userId,
+    normalized,
+  );
+  return normalized;
 };
