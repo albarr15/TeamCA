@@ -31,6 +31,12 @@ import {
   emitTaskStatusUpdated,
   emitUsersNotification,
 } from "../socket/io.js";
+import {
+  compactActivityChanges,
+  logActivityForRequest,
+  optionalActivityText,
+  safeActivityText,
+} from "../utils/activityLogPayload.js";
 
 const createTaskSchema = z.object({
   title: z
@@ -431,6 +437,26 @@ export const assignTaskHandler = async (req: Request, res: Response) => {
       (id) => !currentAssigneeIds.includes(id),
     );
     const actorId = String(req.user.user_id);
+    const taskTitle = safeActivityText(task.title, taskId);
+
+    await logActivityForRequest(req, {
+      action_type: "update",
+      resource_type: "task",
+      resource_id: taskId,
+      description: `Task assignment updated: ${taskTitle}`,
+      changes: compactActivityChanges({
+        task_id: taskId,
+        task_title: taskTitle,
+        task_status: safeActivityText(task.status, "Unknown Status"),
+        old_assigned_user_ids: previousAssigneeIds,
+        new_assigned_user_ids: currentAssigneeIds,
+        added_assigned_user_ids: addedAssigneeIds,
+        removed_assigned_user_ids: removedAssigneeIds,
+        assigned_user_ids: currentAssigneeIds,
+        performed_by_user_id: actorId,
+        performed_by_email: optionalActivityText(req.user?.email),
+      }),
+    });
 
     if (addedAssigneeIds.length > 0) {
       const notifications = await createNotificationsForRecipients(
@@ -641,6 +667,26 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
     const actorId = String(req.user.user_id);
     const actorFirstName = await getUserFirstNameById(actorId);
     const assigneeIds = await getTaskAssigneeIds(taskId);
+    const previousStatus = updated.history.previous_status;
+    const newStatus = payload.status;
+    const taskTitle = safeActivityText(updated.task.title, taskId);
+
+    await logActivityForRequest(req, {
+      action_type: "update",
+      resource_type: "task",
+      resource_id: taskId,
+      description: `Task status changed: ${previousStatus} -> ${newStatus}`,
+      changes: compactActivityChanges({
+        task_id: taskId,
+        task_title: taskTitle,
+        old_status: previousStatus,
+        new_status: newStatus,
+        assigned_user_ids: assigneeIds,
+        performed_by_user_id: actorId,
+        performed_by_email: optionalActivityText(req.user?.email),
+      }),
+    });
+
     const statusNotifications = await createNotificationsForRecipients(
       assigneeIds,
       {
@@ -699,26 +745,88 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
       }
     }
 
-    if (payload.status === "Under Review" || payload.status === "Completed") {
-      const participantIds = await getTaskParticipantIds(taskId);
-      const reviewerIds = await getDepartmentReviewerIdsForTask(taskId);
-      const recipientIds = [...new Set([...participantIds, ...reviewerIds])];
+    if (payload.status === "Under Review") {
+      // Two separate notification batches so reviewers get an actionable message
+      // while assignees/creator get a status-update message.
+      const [participantIds, reviewerIds] = await Promise.all([
+        getTaskParticipantIds(taskId),
+        getDepartmentReviewerIdsForTask(taskId),
+      ]);
 
-      const eventType =
-        payload.status === "Under Review"
-          ? "task_status_under_review"
-          : "task_status_completed";
+      // Reviewers who are NOT already participants get the approval-request message.
+      const reviewerOnlyIds = reviewerIds.filter(
+        (id) => !participantIds.includes(id),
+      );
 
-      const notifications = await createNotificationsForRecipients(
-        recipientIds,
+      // Participants (assignees + creator) — "your task is under review"
+      if (participantIds.length > 0) {
+        const participantNotifications = await createNotificationsForRecipients(
+          participantIds,
+          {
+            actorId,
+            eventType: "task_status_under_review",
+            title: "Task sent for review",
+            message: `${actorFirstName} submitted "${updated.task.title}" for review.`,
+            entityType: "task",
+            entityId: taskId,
+            metadata: {
+              task_id: taskId,
+              new_status: payload.status,
+              actor_first_name: actorFirstName,
+              task_title: updated.task.title,
+              task_status: payload.status,
+            },
+          },
+        );
+
+        for (const notification of participantNotifications) {
+          emitUsersNotification([notification.recipient_id], notification);
+        }
+      }
+
+      // Reviewers outside the participant list — "needs your approval"
+      if (reviewerOnlyIds.length > 0) {
+        const reviewerNotifications = await createNotificationsForRecipients(
+          reviewerOnlyIds,
+          {
+            actorId,
+            eventType: "task_review_required",
+            title: "Task needs your approval",
+            message: `"${updated.task.title}" has been submitted for review and requires your approval.`,
+            entityType: "task",
+            entityId: taskId,
+            metadata: {
+              task_id: taskId,
+              new_status: payload.status,
+              actor_first_name: actorFirstName,
+              task_title: updated.task.title,
+              task_status: payload.status,
+            },
+          },
+        );
+
+        for (const notification of reviewerNotifications) {
+          emitUsersNotification([notification.recipient_id], notification);
+        }
+      }
+    }
+
+    if (payload.status === "Completed") {
+      const [participantIds, reviewerIds] = await Promise.all([
+        getTaskParticipantIds(taskId),
+        getDepartmentReviewerIdsForTask(taskId),
+      ]);
+      const completedRecipientIds = [
+        ...new Set([...participantIds, ...reviewerIds]),
+      ];
+
+      const completedNotifications = await createNotificationsForRecipients(
+        completedRecipientIds,
         {
           actorId,
-          eventType,
-          title:
-            payload.status === "Under Review"
-              ? "Task sent for review"
-              : "Task completed",
-          message: `${actorFirstName} changed status of "${updated.task.title}" to ${payload.status}.`,
+          eventType: "task_status_completed",
+          title: "Task completed",
+          message: `${actorFirstName} approved and completed "${updated.task.title}".`,
           entityType: "task",
           entityId: taskId,
           metadata: {
@@ -731,7 +839,7 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
         },
       );
 
-      for (const notification of notifications) {
+      for (const notification of completedNotifications) {
         emitUsersNotification([notification.recipient_id], notification);
       }
     }
@@ -786,7 +894,7 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
     }
 
     const existingTask = await Task.findById(taskId)
-      .select("title description deadline")
+      .select("title description deadline status")
       .lean();
 
     if (!existingTask) {
@@ -869,6 +977,10 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
+      }
+
+      if (error.message.includes("Task details are locked")) {
+        return res.status(400).json({ message: error.message });
       }
 
       if (error.message.includes("do not have permission")) {
