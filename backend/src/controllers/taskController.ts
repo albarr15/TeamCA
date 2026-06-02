@@ -713,26 +713,88 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
       }
     }
 
-    if (payload.status === "Under Review" || payload.status === "Completed") {
-      const participantIds = await getTaskParticipantIds(taskId);
-      const reviewerIds = await getDepartmentReviewerIdsForTask(taskId);
-      const recipientIds = [...new Set([...participantIds, ...reviewerIds])];
+    if (payload.status === "Under Review") {
+      // Two separate notification batches so reviewers get an actionable message
+      // while assignees/creator get a status-update message.
+      const [participantIds, reviewerIds] = await Promise.all([
+        getTaskParticipantIds(taskId),
+        getDepartmentReviewerIdsForTask(taskId),
+      ]);
 
-      const eventType =
-        payload.status === "Under Review"
-          ? "task_status_under_review"
-          : "task_status_completed";
+      // Reviewers who are NOT already participants get the approval-request message.
+      const reviewerOnlyIds = reviewerIds.filter(
+        (id) => !participantIds.includes(id),
+      );
 
-      const notifications = await createNotificationsForRecipients(
-        recipientIds,
+      // Participants (assignees + creator) — "your task is under review"
+      if (participantIds.length > 0) {
+        const participantNotifications = await createNotificationsForRecipients(
+          participantIds,
+          {
+            actorId,
+            eventType: "task_status_under_review",
+            title: "Task sent for review",
+            message: `${actorFirstName} submitted "${updated.task.title}" for review.`,
+            entityType: "task",
+            entityId: taskId,
+            metadata: {
+              task_id: taskId,
+              new_status: payload.status,
+              actor_first_name: actorFirstName,
+              task_title: updated.task.title,
+              task_status: payload.status,
+            },
+          },
+        );
+
+        for (const notification of participantNotifications) {
+          emitUsersNotification([notification.recipient_id], notification);
+        }
+      }
+
+      // Reviewers outside the participant list — "needs your approval"
+      if (reviewerOnlyIds.length > 0) {
+        const reviewerNotifications = await createNotificationsForRecipients(
+          reviewerOnlyIds,
+          {
+            actorId,
+            eventType: "task_review_required",
+            title: "Task needs your approval",
+            message: `"${updated.task.title}" has been submitted for review and requires your approval.`,
+            entityType: "task",
+            entityId: taskId,
+            metadata: {
+              task_id: taskId,
+              new_status: payload.status,
+              actor_first_name: actorFirstName,
+              task_title: updated.task.title,
+              task_status: payload.status,
+            },
+          },
+        );
+
+        for (const notification of reviewerNotifications) {
+          emitUsersNotification([notification.recipient_id], notification);
+        }
+      }
+    }
+
+    if (payload.status === "Completed") {
+      const [participantIds, reviewerIds] = await Promise.all([
+        getTaskParticipantIds(taskId),
+        getDepartmentReviewerIdsForTask(taskId),
+      ]);
+      const completedRecipientIds = [
+        ...new Set([...participantIds, ...reviewerIds]),
+      ];
+
+      const completedNotifications = await createNotificationsForRecipients(
+        completedRecipientIds,
         {
           actorId,
-          eventType,
-          title:
-            payload.status === "Under Review"
-              ? "Task sent for review"
-              : "Task completed",
-          message: `${actorFirstName} changed status of "${updated.task.title}" to ${payload.status}.`,
+          eventType: "task_status_completed",
+          title: "Task completed",
+          message: `${actorFirstName} approved and completed "${updated.task.title}".`,
           entityType: "task",
           entityId: taskId,
           metadata: {
@@ -745,7 +807,7 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
         },
       );
 
-      for (const notification of notifications) {
+      for (const notification of completedNotifications) {
         emitUsersNotification([notification.recipient_id], notification);
       }
     }
@@ -800,7 +862,7 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
     }
 
     const existingTask = await Task.findById(taskId)
-      .select("title description deadline")
+      .select("title description deadline status")
       .lean();
 
     if (!existingTask) {
@@ -883,6 +945,10 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
+      }
+
+      if (error.message.includes("Task details are locked")) {
+        return res.status(400).json({ message: error.message });
       }
 
       if (error.message.includes("do not have permission")) {
