@@ -1,5 +1,4 @@
-// backend\src\routes\index.ts
-
+// file: backend/src/routes/index.ts
 import { Router } from "express";
 import authRoutes from "./authRoutes.js";
 import departmentRoutes from "./departmentRoutes.js";
@@ -10,6 +9,7 @@ import dtrRoutes from "./dtrRoutes.js";
 import leaveRoutes from "./leaveRoutes.js";
 import taskRoutes from "./taskRoutes.js";
 import activityRoutes from "./activityRoutes.js";
+import taskTemplateRoutes from "./taskTemplateRoutes.js";
 
 const router = Router();
 
@@ -22,7 +22,7 @@ router.use("/tasks", taskRoutes);
 router.use("/activity", activityRoutes);
 router.use("/activity-logs", activityRoutes);
 router.use("/dtr", dtrRoutes);
-
 router.use("/leave", leaveRoutes);
+router.use("/task-templates", taskTemplateRoutes);
 
 export default router;

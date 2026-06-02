@@ -4,6 +4,7 @@ import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import { taskService } from '../../services/taskService';
 import { userService } from '../../services/userService';
+import { taskTemplateService, type TaskTemplateData } from '../../services/taskTemplateService';
 import { useAuthStore } from '../../store/authStore';
 import type {
   CreateTaskPayload,
@@ -156,6 +157,23 @@ export default function TasksPage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [noDueDateTime, setNoDueDateTime] = useState(false);
+  
+  // Template States
+  const [templates, setTemplates] = useState<(TaskTemplateData & { _id: string })[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [templateFormError, setTemplateFormError] = useState('');
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [templateForm, setTemplateForm] = useState<TaskTemplateData>({
+    title: '',
+    description: '',
+    priority: 'Medium',
+    recurrenceRule: 'Weekly',
+    customRecurrenceDays: 7,
+    departmentId: '',
+  });
+
   const [createForm, setCreateForm] = useState<{
     title: string;
     description: string;
@@ -227,6 +245,17 @@ export default function TasksPage() {
   const isIntern = currentDepartmentRole === 'Intern';
   const canSubmitFeedback = isSuperadmin || isAdmin || isHeadOrSupervisor;
   const isSelfOnlyAssignee = isStandardUser;
+
+  const loadTemplates = useCallback(async () => {
+    if (!isSuperadmin && !isAdmin && !isHeadOrSupervisor) return;
+    try {
+      const departmentId = currentUser?.departments?.[0]?.department_id;
+      const data = await taskTemplateService.getTemplates(departmentId ? String(departmentId) : undefined);
+      setTemplates(data as (TaskTemplateData & { _id: string })[]);
+    } catch (error) {
+      console.error('Failed to load task templates', error);
+    }
+  }, [isAdmin, isHeadOrSupervisor, isSuperadmin, currentUser]);
 
   const canDeleteTask = useCallback((task: TaskListItem) => {
     if (task.status === 'Completed') {
@@ -379,7 +408,8 @@ export default function TasksPage() {
     }
 
     void loadTasks();
-  }, [isAuthenticated, loadTasks, mounted]);
+    void loadTemplates();
+  }, [isAuthenticated, loadTasks, loadTemplates, mounted]);
 
   useEffect(() => {
     if (!mounted || !isAuthenticated) {
@@ -842,13 +872,18 @@ export default function TasksPage() {
     setIsCreatingTask(true);
 
     try {
-      const payload: CreateTaskPayload = {
+      const payload: CreateTaskPayload & { isRecurring?: boolean; recurrenceTemplateId?: string } = {
         title: createForm.title.trim(),
         description: createForm.description.trim() || undefined,
         priority: createForm.priority,
         deadline: deadlineIso,
         assigned_to: selectedAssignees,
       };
+
+      if (selectedTemplateId) {
+        payload.isRecurring = true;
+        payload.recurrenceTemplateId = selectedTemplateId;
+      }
 
       await taskService.createTask(payload);
 
@@ -860,6 +895,7 @@ export default function TasksPage() {
         dueDate: '',
         dueTime: '',
       });
+      setSelectedTemplateId('');
       setNoDueDateTime(false);
       setAssigneeIds(resolvedCurrentUserId ? [resolvedCurrentUserId] : []);
       setIsCreateModalOpen(false);
@@ -869,6 +905,35 @@ export default function TasksPage() {
       setCreateError(error?.response?.data?.message || 'Failed to create task.');
     } finally {
       setIsCreatingTask(false);
+    }
+  };
+
+  const handleSaveTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTemplateFormError('');
+    if (!templateForm.title.trim()) {
+      setTemplateFormError('Template title is required.');
+      return;
+    }
+
+    setIsSavingTemplate(true);
+    try {
+      if (editingTemplateId) {
+        await taskTemplateService.updateTemplate(editingTemplateId, templateForm);
+      } else {
+        await taskTemplateService.createTemplate({
+          ...templateForm,
+          departmentId: String(currentUser?.departments?.[0]?.department_id || ''),
+        });
+      }
+      setTemplateForm({ title: '', description: '', priority: 'Medium', recurrenceRule: 'Weekly', customRecurrenceDays: 7, departmentId: '' });
+      setEditingTemplateId(null);
+      await loadTemplates();
+      pushModalToast(editingTemplateId ? 'Template updated' : 'Template created');
+    } catch (err: any) {
+      setTemplateFormError(err?.response?.data?.message || 'Failed to save template');
+    } finally {
+      setIsSavingTemplate(false);
     }
   };
 
@@ -1014,6 +1079,19 @@ export default function TasksPage() {
           <p className="mt-1 text-sm text-slate-500">Create and view all your tasks in one place. Select a task for a detailed view.</p>
         </div>
         <div className="flex items-center gap-2">
+          { (isSuperadmin || isAdmin || isHeadOrSupervisor) && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsTemplateManagerOpen(true)}
+            >
+              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              Manage Templates
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -1029,7 +1107,7 @@ export default function TasksPage() {
             </svg>
           </Button>
           <Button type="button" size="sm" onClick={() => setIsCreateModalOpen(true)}>
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
             </svg>
             Add Task
@@ -1182,6 +1260,39 @@ export default function TasksPage() {
               </div>
             </div>
           ) : null}
+
+          {templates.length > 0 && (
+            <label className="flex flex-col gap-1 pb-2 border-b border-slate-200">
+              <span className="text-sm font-medium text-slate-700">Use Template (Optional)</span>
+              <select
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 bg-slate-50"
+                value={selectedTemplateId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedTemplateId(val);
+                  if (val) {
+                    const t = templates.find(temp => temp._id === val);
+                    if (t) {
+                      setCreateForm(prev => ({
+                        ...prev,
+                        title: t.title,
+                        description: t.description || '',
+                        priority: t.priority as TaskPriority
+                      }));
+                    }
+                  } else {
+                    setCreateForm({ title: '', description: '', priority: 'Medium', dueDate: '', dueTime: '' });
+                  }
+                }}
+              >
+                <option value="">-- Custom Task --</option>
+                {templates.map(t => (
+                  <option key={t._id} value={t._id}>{t.title} ({t.recurrenceRule})</option>
+                ))}
+              </select>
+            </label>
+          )}
+
           <Input
             label="Title"
             value={createForm.title}
@@ -1322,6 +1433,7 @@ export default function TasksPage() {
         </form>
       </Modal>
 
+      {/* Edit Details Modal */}
       <Modal
         open={isEditDetailsModalOpen}
         onClose={() => setIsEditDetailsModalOpen(false)}
@@ -1405,6 +1517,7 @@ export default function TasksPage() {
         </form>
       </Modal>
 
+      {/* Delete Confirmation Modal */}
       <Modal
         open={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
@@ -1426,6 +1539,123 @@ export default function TasksPage() {
         </div>
       </Modal>
 
+      {/* Template Manager Modal */}
+      <Modal
+        open={isTemplateManagerOpen}
+        onClose={() => setIsTemplateManagerOpen(false)}
+        title="Manage Recurring Templates"
+        className="max-w-2xl"
+      >
+        <div className="space-y-6">
+          <div className="bg-slate-50 border border-slate-200 rounded-md p-4">
+            <h3 className="text-sm font-semibold mb-3">{editingTemplateId ? 'Edit Template' : 'Create New Template'}</h3>
+            <form className="space-y-3" onSubmit={handleSaveTemplate}>
+              <Input
+                label="Template Title"
+                value={templateForm.title}
+                onChange={e => setTemplateForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="E.g., Weekly Report"
+              />
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-slate-700">Description</span>
+                <textarea
+                  rows={2}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
+                  value={templateForm.description}
+                  onChange={e => setTemplateForm(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-700">Priority</span>
+                  <select
+                    className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
+                    value={templateForm.priority}
+                    onChange={(event) => setTemplateForm((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))}
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-700">Recurrence</span>
+                  <select
+                    className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
+                    value={templateForm.recurrenceRule}
+                    onChange={(event) => setTemplateForm((prev) => ({ ...prev, recurrenceRule: event.target.value as any }))}
+                  >
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Custom">Custom</option>
+                  </select>
+                </label>
+              </div>
+              
+              {templateForm.recurrenceRule === 'Custom' && (
+                 <Input
+                 type="number"
+                 label="Custom Days (Recur every X days)"
+                 value={templateForm.customRecurrenceDays?.toString() || '7'}
+                 onChange={e => setTemplateForm(prev => ({ ...prev, customRecurrenceDays: parseInt(e.target.value) || 7 }))}
+               />
+              )}
+
+              {templateFormError && (
+                <p className="text-xs text-red-600">{templateFormError}</p>
+              )}
+
+              <div className="flex justify-end gap-2 mt-2">
+                {editingTemplateId && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => {
+                    setEditingTemplateId(null);
+                    setTemplateForm({ title: '', description: '', priority: 'Medium', recurrenceRule: 'Weekly', customRecurrenceDays: 7, departmentId: '' });
+                  }}>
+                    Cancel Edit
+                  </Button>
+                )}
+                <Button type="submit" size="sm" loading={isSavingTemplate}>
+                  {editingTemplateId ? 'Save Changes' : 'Create Template'}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Existing Templates</h3>
+            <div className="border border-slate-200 rounded-md divide-y max-h-60 overflow-y-auto">
+              {templates.length === 0 ? (
+                <p className="text-sm text-slate-500 p-3">No templates found.</p>
+              ) : (
+                templates.map(t => (
+                  <div key={t._id} className="flex justify-between items-center p-3 text-sm hover:bg-slate-50">
+                    <div>
+                      <p className="font-medium">{t.title}</p>
+                      <p className="text-xs text-slate-500">Recurrence: {t.recurrenceRule}</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => {
+                      setEditingTemplateId(t._id);
+                      setTemplateForm({
+                        title: t.title,
+                        description: t.description || '',
+                        priority: t.priority as TaskPriority,
+                        recurrenceRule: t.recurrenceRule,
+                        customRecurrenceDays: t.customRecurrenceDays,
+                        departmentId: t.departmentId
+                      });
+                    }}>
+                      Edit
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Global Toasts */}
       {modalToasts.length > 0 ? (
         <div className="pointer-events-none fixed bottom-4 right-4 z-[70] space-y-2">
           {modalToasts.map((toast) => (

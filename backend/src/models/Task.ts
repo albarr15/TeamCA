@@ -1,3 +1,4 @@
+// file: backend/src/models/Task.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export type TaskStatus =
@@ -15,6 +16,8 @@ export interface ITask extends Document {
   priority: TaskPriority;
   deadline?: Date;
   created_at: Date;
+  isRecurring?: boolean;
+  recurrenceTemplateId?: Types.ObjectId;
 }
 
 const taskSchema = new Schema<ITask>({
@@ -33,6 +36,8 @@ const taskSchema = new Schema<ITask>({
   },
   deadline: { type: Date, required: false },
   created_at: { type: Date, default: Date.now },
+  isRecurring: { type: Boolean, default: false },
+  recurrenceTemplateId: { type: Schema.Types.ObjectId, ref: "TaskTemplate", required: false },
 });
 
 export default mongoose.model<ITask>("Task", taskSchema);
