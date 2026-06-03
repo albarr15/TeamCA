@@ -15,7 +15,6 @@ import BatchesBriefWidget from '../../components/widgets/BatchesBriefWidget';
 import InternProductivityHero from '../../components/widgets/InternProductivityHero';
 import WeeklySummaryCard from '../../components/widgets/WeeklySummaryCard';
 import RecentCompletionsCard from '../../components/widgets/RecentCompletionsCard';
-import ContributionHeatmap from '../../components/widgets/ContributionHeatmap';
 import { CalendarSkeleton, StatCardSkeleton } from '../../components/ui/Skeleton';
 import { useUserDirectorySocket } from '../../hooks/useUserDirectorySocket';
 import { useTaskListSocket } from '../../hooks/useTaskListSocket';
@@ -158,11 +157,6 @@ export default function RoleDashboard() {
             isLoading={productivityLoading}
           />
         </section>
-
-        <ContributionHeatmap
-          summary={productivity}
-          isLoading={productivityLoading}
-        />
 
         <section className="grid gap-4 xl:grid-cols-[2fr,1fr]">
           <div className="space-y-4">

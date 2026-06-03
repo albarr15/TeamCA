@@ -22,7 +22,7 @@ const startOfPHDay = (date: Date): Date => {
 /**
  * ISO week start (Monday 00:00 PH) for the date's week.
  */
-const startOfPHISOWeek = (date: Date): Date => {
+export const startOfPHISOWeek = (date: Date): Date => {
   const start = startOfPHDay(date);
   const ph = toPHTime(start);
   const day = ph.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
@@ -35,14 +35,14 @@ const endOfPHISOWeek = (date: Date): Date => {
   return new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
 };
 
-const parseTimeHHMM = (value?: string): number => {
+export const parseTimeHHMM = (value?: string): number => {
   if (!value) return 0;
   const [h, m] = value.split(":").map((v) => Number(v));
   if (!Number.isFinite(h) || !Number.isFinite(m)) return 0;
   return h * 60 + m;
 };
 
-const computeWeeklyTargetHours = (user: {
+export const computeWeeklyTargetHours = (user: {
   working_hours?: { start?: string; end?: string };
   working_days?: string[];
 }): number => {
@@ -74,13 +74,6 @@ export type ProductivitySummary = {
     title: string;
     completed_at: Date;
   }>;
-  /**
-   * Per-day completion counts for the last `heatmap_weeks` weeks.
-   * Always dense (every day present, missing days = 0). Ordered oldest → newest.
-   * `date` is the PH-local YYYY-MM-DD key.
-   */
-  heatmap: Array<{ date: string; count: number }>;
-  heatmap_weeks: number;
 };
 
 const getCompletionDatesForUser = async (
@@ -108,7 +101,7 @@ const getCompletionDatesForUser = async (
   return events.map((e) => e.timestamp);
 };
 
-const computeStreaks = (completionDates: Date[]): {
+export const computeStreaks = (completionDates: Date[]): {
   current: number;
   longest: number;
 } => {
@@ -196,32 +189,6 @@ export const getProductivitySummary = async (
 
   const streaks = computeStreaks(allCompletions);
 
-  // Heatmap: last 12 weeks of completions, dense per-day. Align the window
-  // start to the most recent Sunday so the grid renders as full week columns.
-  const HEATMAP_WEEKS = 12;
-  const todayStart = startOfPHDay(new Date());
-  const todayPH = toPHTime(todayStart);
-  const dayOfWeek = todayPH.getUTCDay(); // 0 = Sun
-  const endSaturday = new Date(
-    todayStart.getTime() + (6 - dayOfWeek) * 24 * 60 * 60 * 1000,
-  );
-  const startSunday = new Date(
-    endSaturday.getTime() - (HEATMAP_WEEKS * 7 - 1) * 24 * 60 * 60 * 1000,
-  );
-
-  const heatmapCounts = new Map<string, number>();
-  for (const ts of allCompletions) {
-    if (ts < startSunday || ts > endSaturday) continue;
-    const key = fromPHToDateKey(ts);
-    heatmapCounts.set(key, (heatmapCounts.get(key) ?? 0) + 1);
-  }
-  const heatmap: Array<{ date: string; count: number }> = [];
-  for (let i = 0; i < HEATMAP_WEEKS * 7; i++) {
-    const day = new Date(startSunday.getTime() + i * 24 * 60 * 60 * 1000);
-    const key = fromPHToDateKey(day);
-    heatmap.push({ date: key, count: heatmapCounts.get(key) ?? 0 });
-  }
-
   // Recent completions: last 10 across all time
   const assignments = await TaskAssignment.find({ assigned_to: userObjectId })
     .select("task_id")
@@ -271,7 +238,5 @@ export const getProductivitySummary = async (
       longest_days: streaks.longest,
     },
     recent_completions,
-    heatmap,
-    heatmap_weeks: HEATMAP_WEEKS,
   };
 };

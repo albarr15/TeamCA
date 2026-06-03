@@ -1,3 +1,4 @@
+import { Target } from 'lucide-react';
 import Card from '../ui/Card';
 import { WidgetSkeleton } from '../ui/Skeleton';
 import type { ProductivitySummary } from '../../types/productivity';
@@ -53,7 +54,7 @@ export default function RecentCompletionsCard({ summary, isLoading }: Props) {
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-8 text-center">
-          <span className="text-2xl" aria-hidden>🎯</span>
+          <Target className="h-7 w-7 text-slate-400" aria-hidden />
           <p className="mt-2 text-sm text-slate-600">No completed tasks yet</p>
           <p className="mt-1 text-xs text-slate-400">Finish one to start building your streak.</p>
         </div>

@@ -19,7 +19,7 @@ import { internProfileService } from '../../services/internProfileService';
 import type { InternProfile } from '../../types/user';
 import InternProductivityHero from '../../components/widgets/InternProductivityHero';
 import RecentCompletionsCard from '../../components/widgets/RecentCompletionsCard';
-import ContributionHeatmap from '../../components/widgets/ContributionHeatmap';
+import ClockHistoryCard from '../../components/widgets/ClockHistoryCard';
 import { productivityService } from '../../services/productivityService';
 import type { ProductivitySummary } from '../../types/productivity';
 import { useTaskListSocket } from '../../hooks/useTaskListSocket';
@@ -45,6 +45,17 @@ export default function InternDashboard() {
   const [clockOutError, setClockOutError] = React.useState<string | null>(null);
   const [productivity, setProductivity] = React.useState<ProductivitySummary | null>(null);
   const [productivityLoading, setProductivityLoading] = React.useState(true);
+
+  // Active session's clock-in timestamp — used by the hero for context-aware
+  // messaging (e.g. "you've been clocked in for 3h, consider a break").
+  const currentClockInTime = React.useMemo<Date | null>(() => {
+    if (!dtrRecords.length) return null;
+    const latest = [...dtrRecords].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    )[0];
+    const openClock = latest?.clocks?.find((c) => c.timeIn && !c.timeOut);
+    return openClock?.timeIn ? new Date(openClock.timeIn) : null;
+  }, [dtrRecords]);
 
   const refreshProductivity = React.useCallback(() => {
     setProductivityLoading(true);
@@ -160,6 +171,11 @@ export default function InternDashboard() {
       <InternProductivityHero
         summary={productivity}
         isLoading={productivityLoading}
+        clockedIn={clockedIn}
+        isOnBreak={isOnBreak}
+        clockInTime={currentClockInTime}
+        workingHours={user?.working_hours}
+        workingDays={user?.working_days}
       />
 
       {dtrActionError && (
@@ -200,10 +216,10 @@ export default function InternDashboard() {
         }}
       />
 
-      {/* 3. REVIEW — long-term consistency */}
-      <ContributionHeatmap
-        summary={productivity}
-        isLoading={productivityLoading}
+      {/* 3. Recent clock sessions */}
+      <ClockHistoryCard
+        records={dtrRecords}
+        isLoading={isLoadingWidgets}
       />
 
       {/* 4. DRILL — task context (left) + time context (right) */}

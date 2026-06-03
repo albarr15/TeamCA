@@ -100,30 +100,30 @@ export default function DTRAnalyticsWidget({
   const attendanceRate =
     totalWorkDays > 0 ? Math.round((presentDays / totalWorkDays) * 100) : 0;
 
-  // Stats for dashboard
+  // Stats for dashboard — text stays black; only the tile background carries the tone
   const stats = [
     {
       label: "Hours Rendered",
       value: `${renderedHoursPart}h ${renderedMinutesPart}m`,
-      color: "text-blue-600",
+      color: "text-slate-900",
       bg: "bg-blue-50",
     },
     {
       label: "Hours Remaining",
       value: `${remainingHoursPart}h ${remainingMinutesPart}m`,
-      color: "text-orange-600",
+      color: "text-slate-900",
       bg: "bg-orange-50",
     },
     {
       label: "Days Present",
       value: presentDays,
-      color: "text-green-600",
+      color: "text-slate-900",
       bg: "bg-green-50",
     },
     {
       label: "Attendance Rate",
       value: `${attendanceRate}%`,
-      color: "text-purple-600",
+      color: "text-slate-900",
       bg: "bg-purple-50",
     },
   ];
@@ -133,8 +133,8 @@ export default function DTRAnalyticsWidget({
       {/* Progress bar */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-gray-600">Internship Progress</span>
-          <span className="text-sm font-semibold text-gray-800">
+          <span className="text-sm text-slate-900">Internship Progress</span>
+          <span className="text-sm font-semibold text-slate-900">
             {percentage}%
           </span>
         </div>
@@ -147,10 +147,10 @@ export default function DTRAnalyticsWidget({
         </div>
 
         <div className="flex justify-between mt-1">
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-slate-700">
             {renderedHoursPart}h {renderedMinutesPart}m rendered
           </span>
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-slate-700">
             {requiredHours}h required
           </span>
         </div>
@@ -161,7 +161,7 @@ export default function DTRAnalyticsWidget({
         {stats.map((s) => (
           <div key={s.label} className={`${s.bg} rounded-lg px-3 py-3`}>
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+            <p className="text-xs text-slate-900 mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>

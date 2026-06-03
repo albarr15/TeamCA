@@ -17,6 +17,4 @@ export type ProductivitySummary = {
     title: string;
     completed_at: string;
   }>;
-  heatmap: Array<{ date: string; count: number }>;
-  heatmap_weeks: number;
 };
