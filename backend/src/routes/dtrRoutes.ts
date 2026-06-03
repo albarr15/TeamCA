@@ -12,6 +12,9 @@ router.post("/time-in", authMiddleware, dtrController.timeIn);
 router.post("/time-out", authMiddleware, dtrController.timeOut);
 router.get("/me", authMiddleware, dtrController.getMyDTR);
 
+// Active session recovery (call on page load / reconnect)
+router.get("/active-session", authMiddleware, dtrController.getActiveSession);
+
 // Breaks
 router.post("/break-start", authMiddleware, dtrController.startBreak);
 router.post("/break-end", authMiddleware, dtrController.endBreak);

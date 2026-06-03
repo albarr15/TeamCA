@@ -26,7 +26,17 @@ export const timeIn = async (req: AuthRequest, res: Response) => {
       data: result,
     });
   } catch (error: unknown) {
-    const err = error as Error;
+    const err = error as any;
+
+    // Active session prevention: return structured 409 Conflict with session details
+    if (err.code === "ACTIVE_SESSION") {
+      return res.status(409).json({
+        success: false,
+        code: "ACTIVE_SESSION",
+        message: err.message,
+        activeSession: err.activeSession,
+      });
+    }
 
     res.status(400).json({
       success: false,
@@ -77,6 +87,35 @@ export const getMyDTR = async (req: AuthRequest, res: Response) => {
       success: true,
       count: dtrs.length,
       data: dtrs,
+    });
+  } catch (error: unknown) {
+    const err = error as Error;
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/**
+ * GET ACTIVE SESSION
+ * GET /dtr/active-session
+ * Returns the current active clock-in session for the authenticated user, if any.
+ * Used on page load / reconnect to recover UI state without requiring a full DTR fetch.
+ */
+export const getActiveSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = getUserId(req);
+
+    const result = await dtrService.getActiveSession(userId);
+
+    res.json({
+      success: true,
+      message: result.hasActiveSession
+        ? "Active session found"
+        : "No active session",
+      data: result,
     });
   } catch (error: unknown) {
     const err = error as Error;
