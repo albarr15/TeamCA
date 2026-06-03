@@ -13,6 +13,7 @@ export type NotificationEventType =
   | "task_due_today"
   | "task_overdue"
   | "task_review_required"
+  | "task_deliverable_reviewed"
   | "user_profile_updated"
   | "user_role_changed"
   | "user_activation_changed"
@@ -136,6 +137,11 @@ export const NOTIFICATION_PREFERENCE_GROUPS: NotificationPreferenceGroup[] = [
         key: "task_overdue",
         label: "Task overdue",
         description: "Alert when a task is past its due date.",
+      },
+      {
+        key: "task_deliverable_reviewed",
+        label: "Deliverable reviewed",
+        description: "When a supervisor approves or rejects your deliverable link.",
       },
     ],
   },

@@ -19,6 +19,7 @@ export type NotificationEventType =
   | "task_due_today"
   | "task_overdue"
   | "task_review_required"
+  | "task_deliverable_reviewed"
   // ── existing user events ──────────────────────────────────────────────────
   | "user_profile_updated"
   | "user_role_changed"
@@ -74,6 +75,7 @@ const notificationSchema = new Schema<INotification>({
       "task_due_today",
       "task_overdue",
       "task_review_required",
+      "task_deliverable_reviewed",
       // user
       "user_profile_updated",
       "user_role_changed",

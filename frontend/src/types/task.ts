@@ -70,12 +70,25 @@ export interface TaskFeedback {
   created_at: string | Date;
 }
 
+export type DeliverablePlatform =
+  | "github"
+  | "figma"
+  | "drive"
+  | "vercel"
+  | "notion"
+  | "other";
+
+export type DeliverableStatus = "pending_review" | "approved" | "rejected";
+
 export interface TaskWorkLink {
   work_link_id: string;
   task_id: string;
   submitted_by: string;
   url: string;
   label?: string;
+  platform: DeliverablePlatform;
+  status: DeliverableStatus;
+  review_notes?: string;
   created_at: string | Date;
 }
 
@@ -92,6 +105,7 @@ export interface TaskLinkPermissions {
   can_add_links: boolean;
   can_delete_any_link: boolean;
   can_delete_own_links: boolean;
+  can_review_links: boolean;
 }
 
 export interface TaskDetail extends Task {
@@ -144,6 +158,11 @@ export interface AddTaskFeedbackPayload {
 export interface AddTaskWorkLinkPayload {
   url: string;
   label?: string;
+}
+
+export interface ReviewTaskWorkLinkPayload {
+  status: "approved" | "rejected";
+  review_notes?: string;
 }
 
 export interface AddTaskCommentPayload {

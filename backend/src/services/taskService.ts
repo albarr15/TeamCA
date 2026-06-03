@@ -9,9 +9,13 @@ import TaskAssignment from "../models/TaskAssignment.js";
 import TaskComment from "../models/TaskComment.js";
 import TaskFeedback from "../models/TaskFeedback.js";
 import TaskStatusHistory from "../models/TaskStatusHistory.js";
-import TaskWorkLink from "../models/TaskWorkLink.js";
+import TaskWorkLink, {
+  type DeliverablePlatform,
+  type DeliverableStatus,
+} from "../models/TaskWorkLink.js";
 import User, { type IUser } from "../models/User.js";
 import { getDeadlineState } from "./deadlineService.js";
+import { detectPlatform } from "../utils/deliverableUtils.js";
 
 type ActorRole = IUser["global_role"];
 type ActorDepartmentRole = IUser["departments"][number]["department_role"];
@@ -63,6 +67,13 @@ export type AddTaskWorkLinkInput = {
   label?: string;
 };
 
+export type ReviewTaskWorkLinkInput = {
+  taskId: string;
+  workLinkId: string;
+  status: "approved" | "rejected";
+  review_notes?: string;
+};
+
 export type DeleteTaskWorkLinkInput = {
   taskId: string;
   workLinkId: string;
@@ -95,6 +106,7 @@ export type TaskLinkPermissions = {
   can_add_links: boolean;
   can_delete_any_link: boolean;
   can_delete_own_links: boolean;
+  can_review_links: boolean;
 };
 
 export type TaskUserSummary = {
@@ -151,6 +163,9 @@ export type TaskDetailResponse = ReturnType<typeof normalizeTask> & {
     submitted_by: string;
     url: string;
     label?: string;
+    platform: DeliverablePlatform;
+    status: DeliverableStatus;
+    review_notes?: string;
     created_at: Date;
   }>;
   links_count: number;
@@ -250,6 +265,9 @@ const normalizeWorkLink = (workLink: {
   submitted_by: Types.ObjectId | string;
   url: string;
   label?: string;
+  platform: DeliverablePlatform;
+  status: DeliverableStatus;
+  review_notes?: string;
   created_at: Date;
 }) => ({
   work_link_id: String(workLink._id),
@@ -257,6 +275,9 @@ const normalizeWorkLink = (workLink: {
   submitted_by: String(workLink.submitted_by),
   url: workLink.url,
   label: workLink.label,
+  platform: workLink.platform,
+  status: workLink.status,
+  review_notes: workLink.review_notes,
   created_at: workLink.created_at,
 });
 
@@ -1155,6 +1176,18 @@ export const updateTaskStatus = async (
     }
   }
 
+  if (input.newStatus === "Completed") {
+    const unapprovedCount = await TaskWorkLink.countDocuments({
+      task_id: task._id,
+      status: { $ne: "approved" },
+    });
+    if (unapprovedCount > 0) {
+      throw new Error(
+        "All deliverable links must be approved before marking a task as Completed.",
+      );
+    }
+  }
+
   const allowed = getAllowedTransitions(actor, previousStatus);
   if (!allowed.includes(input.newStatus)) {
     throw new Error(
@@ -1264,11 +1297,29 @@ export const addTaskWorkLink = async (
     );
   }
 
+  // Only users assigned to this task may submit deliverables.
+  const assignment = await TaskAssignment.findOne({
+    task_id: task._id,
+    assigned_to: actor.user_id,
+  })
+    .select("_id")
+    .lean();
+  const isManager =
+    canManageGlobally(actor.global_role) ||
+    canManageDepartment(actor.department_role);
+  if (!assignment && !isManager) {
+    throw new Error(
+      "Only users assigned to this task can submit deliverable links.",
+    );
+  }
+
   const created = await TaskWorkLink.create({
     task_id: task._id,
     submitted_by: actor.user_id,
     url: input.url.trim(),
     label: input.label?.trim() || undefined,
+    platform: detectPlatform(input.url.trim()),
+    status: "pending_review",
   });
 
   return normalizeWorkLink({
@@ -1277,6 +1328,9 @@ export const addTaskWorkLink = async (
     submitted_by: created.submitted_by,
     url: created.url,
     label: created.label,
+    platform: created.platform,
+    status: created.status,
+    review_notes: created.review_notes,
     created_at: created.created_at,
   });
 };
@@ -1312,6 +1366,9 @@ export const listTaskWorkLinks = async (
       submitted_by: item.submitted_by,
       url: item.url,
       label: item.label,
+      platform: item.platform ?? "other",
+      status: item.status ?? "pending_review",
+      review_notes: item.review_notes,
       created_at: item.created_at,
     }),
   );
@@ -1650,13 +1707,18 @@ export const getTaskDetail = async (
   const normalizedTask = normalizeTask(task);
   const canEditLinksByStatus =
     task.status !== "Under Review" && task.status !== "Completed";
-  const managerCanDeleteAny =
+  const managerCanReview =
     canManageGlobally(actor.global_role) ||
     canManageDepartment(actor.department_role);
+  // Any user assigned to the task can add/delete their own links
+  const actorIsAssigned = assigneeIds.some(
+    (id) => String(id) === String(actor.user_id),
+  );
   const link_permissions: TaskLinkPermissions = {
-    can_add_links: canEditLinksByStatus,
-    can_delete_any_link: canEditLinksByStatus && managerCanDeleteAny,
-    can_delete_own_links: canEditLinksByStatus,
+    can_add_links: canEditLinksByStatus && actorIsAssigned,
+    can_delete_any_link: canEditLinksByStatus && managerCanReview,
+    can_delete_own_links: canEditLinksByStatus && actorIsAssigned,
+    can_review_links: managerCanReview,
   };
 
   return {
@@ -1670,6 +1732,9 @@ export const getTaskDetail = async (
         submitted_by: item.submitted_by,
         url: item.url,
         label: item.label,
+        platform: item.platform ?? "other",
+        status: item.status ?? "pending_review",
+        review_notes: item.review_notes,
         created_at: item.created_at,
       }),
     ),
@@ -1678,4 +1743,69 @@ export const getTaskDetail = async (
     comments,
     link_permissions,
   };
+};
+
+// ---------------------------------------------------------------------------
+// Review a task work link (Supervisor / Head / Admin / Superadmin only)
+// ---------------------------------------------------------------------------
+export const reviewTaskWorkLink = async (
+  actor: Express.AuthUser,
+  input: ReviewTaskWorkLinkInput,
+) => {
+  const isManager =
+    canManageGlobally(actor.global_role) ||
+    canManageDepartment(actor.department_role);
+  if (!isManager) {
+    throw new Error(
+      "Only Supervisors, Heads, Admins, and Superadmins can review deliverable links.",
+    );
+  }
+
+  const task = await Task.findById(input.taskId)
+    .select("_id created_by")
+    .lean();
+  if (!task) {
+    throw new Error("Task not found.");
+  }
+
+  const hasAccess = await canAccessTaskScope(actor, {
+    _id: task._id as Types.ObjectId,
+    created_by: task.created_by as Types.ObjectId,
+  });
+  if (!hasAccess) {
+    throw new Error(
+      "You do not have permission to review deliverables for this task.",
+    );
+  }
+
+  const workLink = await TaskWorkLink.findOne({
+    _id: input.workLinkId,
+    task_id: task._id,
+  });
+  if (!workLink) {
+    throw new Error("Work link not found.");
+  }
+
+  if (input.status === "rejected" && !input.review_notes?.trim()) {
+    throw new Error("review_notes is required when rejecting a deliverable.");
+  }
+
+  workLink.status = input.status;
+  workLink.review_notes =
+    input.status === "rejected"
+      ? (input.review_notes?.trim() ?? undefined)
+      : undefined;
+  await workLink.save();
+
+  return normalizeWorkLink({
+    _id: workLink._id,
+    task_id: workLink.task_id,
+    submitted_by: workLink.submitted_by,
+    url: workLink.url,
+    label: workLink.label,
+    platform: workLink.platform ?? "other",
+    status: workLink.status,
+    review_notes: workLink.review_notes,
+    created_at: workLink.created_at,
+  });
 };

@@ -1,10 +1,23 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
+export type DeliverablePlatform =
+  | "github"
+  | "figma"
+  | "drive"
+  | "vercel"
+  | "notion"
+  | "other";
+
+export type DeliverableStatus = "pending_review" | "approved" | "rejected";
+
 export interface ITaskWorkLink extends Document {
   task_id: Types.ObjectId;
   submitted_by: Types.ObjectId;
   url: string;
   label?: string;
+  platform: DeliverablePlatform;
+  status: DeliverableStatus;
+  review_notes?: string;
   created_at: Date;
 }
 
@@ -23,6 +36,17 @@ const taskWorkLinkSchema = new Schema<ITaskWorkLink>({
   },
   url: { type: String, required: true, trim: true },
   label: { type: String, trim: true },
+  platform: {
+    type: String,
+    enum: ["github", "figma", "drive", "vercel", "notion", "other"],
+    default: "other",
+  },
+  status: {
+    type: String,
+    enum: ["pending_review", "approved", "rejected"],
+    default: "pending_review",
+  },
+  review_notes: { type: String, trim: true },
   created_at: { type: Date, default: Date.now },
 });
 
