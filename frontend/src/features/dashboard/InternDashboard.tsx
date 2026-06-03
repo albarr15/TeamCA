@@ -17,6 +17,12 @@ import {
 import { WidgetSkeleton, CalendarSkeleton } from '../../components/ui/Skeleton';
 import { internProfileService } from '../../services/internProfileService';
 import type { InternProfile } from '../../types/user';
+import InternProductivityHero from '../../components/widgets/InternProductivityHero';
+import RecentCompletionsCard from '../../components/widgets/RecentCompletionsCard';
+import ContributionHeatmap from '../../components/widgets/ContributionHeatmap';
+import { productivityService } from '../../services/productivityService';
+import type { ProductivitySummary } from '../../types/productivity';
+import { useTaskListSocket } from '../../hooks/useTaskListSocket';
 
 export default function InternDashboard() {
   const user = useAuthStore((state) => state.user);
@@ -37,18 +43,28 @@ export default function InternDashboard() {
   const [clockOutRemarks, setClockOutRemarks] = React.useState('');
   const [clockOutSubmitting, setClockOutSubmitting] = React.useState(false);
   const [clockOutError, setClockOutError] = React.useState<string | null>(null);
+  const [productivity, setProductivity] = React.useState<ProductivitySummary | null>(null);
+  const [productivityLoading, setProductivityLoading] = React.useState(true);
+
+  const refreshProductivity = React.useCallback(() => {
+    setProductivityLoading(true);
+    productivityService
+      .getMine()
+      .then((data) => setProductivity(data))
+      .catch(() => setProductivity(null))
+      .finally(() => setProductivityLoading(false));
+  }, []);
+
+  React.useEffect(() => {
+    refreshProductivity();
+  }, [refreshProductivity]);
+
+  useTaskListSocket(refreshProductivity);
 
   React.useEffect(() => {
     const timer = setTimeout(() => setIsLoadingWidgets(false), 600);
     return () => clearTimeout(timer);
   }, []);
-
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
 
   React.useEffect(() => {
     const loadDtr = async () => {
@@ -100,9 +116,10 @@ export default function InternDashboard() {
     async () => {
       try {
         await refreshRecords();
+        refreshProductivity();
       } catch {}
     },
-    [refreshRecords],
+    [refreshRecords, refreshProductivity],
   );
 
   // subscribe to DTR socket so dashboard updates live
@@ -138,80 +155,74 @@ export default function InternDashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {greeting()}, {user?.first_name ?? 'Intern'}! 👋
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-            })}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => window.location.href = '/dtr'}
-          >
-            View DTR
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => window.location.href = '/tasks'}
-          >
-            My Tasks
-          </Button>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* 1. GLANCE — hero: greeting + weekly progress ring + 3 KPIs */}
+      <InternProductivityHero
+        summary={productivity}
+        isLoading={productivityLoading}
+      />
+
       {dtrActionError && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
           {dtrActionError}
         </div>
       )}
 
-      {/* Clock Card - Prominent */}
-      <div className="mb-6">
-        <ProperClockCard
-          clockedIn={clockedIn}
-          isOnBreak={isOnBreak}
-          onClockIn={async () => {
-            try {
-                setDtrActionError(null);
-              await clockIn();
-              window.location.reload();
-              } catch (err: any) {
-                setDtrActionError(err?.response?.data?.message || 'Failed to clock in');
-              }
-          }}
-          onClockOut={openClockOutModal}
-          onStartBreak={async () => {
-            try {
-                setDtrActionError(null);
-              await startBreak();
-              } catch (err: any) {
-                setDtrActionError(err?.response?.data?.message || 'Failed to start break');
-              }
-          }}
-          onEndBreak={async () => {
-            try {
-                setDtrActionError(null);
-              await endBreak();
-              } catch (err: any) {
-                setDtrActionError(err?.response?.data?.message || 'Failed to end break');
-              }
-          }}
-        />
-      </div>
+      {/* 2. ACT — clock card (primary daily action) */}
+      <ProperClockCard
+        clockedIn={clockedIn}
+        isOnBreak={isOnBreak}
+        onClockIn={async () => {
+          try {
+            setDtrActionError(null);
+            await clockIn();
+            window.location.reload();
+          } catch (err: any) {
+            setDtrActionError(err?.response?.data?.message || 'Failed to clock in');
+          }
+        }}
+        onClockOut={openClockOutModal}
+        onStartBreak={async () => {
+          try {
+            setDtrActionError(null);
+            await startBreak();
+          } catch (err: any) {
+            setDtrActionError(err?.response?.data?.message || 'Failed to start break');
+          }
+        }}
+        onEndBreak={async () => {
+          try {
+            setDtrActionError(null);
+            await endBreak();
+          } catch (err: any) {
+            setDtrActionError(err?.response?.data?.message || 'Failed to end break');
+          }
+        }}
+      />
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card title="DTR Analytics">
+      {/* 3. REVIEW — long-term consistency */}
+      <ContributionHeatmap
+        summary={productivity}
+        isLoading={productivityLoading}
+      />
+
+      {/* 4. DRILL — task context (left) + time context (right) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <Card title="Task brief" subtitle="What you're working on">
+            {isLoadingWidgets ? <WidgetSkeleton lines={4} /> : <TaskBriefWidget />}
+          </Card>
+          <RecentCompletionsCard
+            summary={productivity}
+            isLoading={productivityLoading}
+          />
+        </div>
+
+        <div className="space-y-6">
+          <Card title="Calendar">
+            {isLoadingWidgets ? <CalendarSkeleton /> : <CalendarWidget />}
+          </Card>
+          <Card title="DTR analytics" subtitle="Hours over time">
             {isLoadingWidgets || isLoadingInternProfile ? (
               <WidgetSkeleton lines={5} />
             ) : (
@@ -223,15 +234,7 @@ export default function InternDashboard() {
               />
             )}
           </Card>
-
-          <Card title="Task Brief">
-            {isLoadingWidgets ? <WidgetSkeleton lines={4} /> : <TaskBriefWidget />}
-          </Card>
         </div>
-
-        <Card title="Calendar">
-          {isLoadingWidgets ? <CalendarSkeleton /> : <CalendarWidget />}
-        </Card>
       </div>
 
       <Dialog open={clockOutModalOpen} onOpenChange={setClockOutModalOpen}>

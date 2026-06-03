@@ -11,6 +11,7 @@ import taskRoutes from "./taskRoutes.js";
 import activityRoutes from "./activityRoutes.js";
 import taskTemplateRoutes from "./taskTemplateRoutes.js";
 import batchRoutes from "./batchRoutes.js";
+import productivityRoutes from "./productivityRoutes.js";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use("/dtr", dtrRoutes);
 router.use("/leave", leaveRoutes);
 router.use("/task-templates", taskTemplateRoutes);
 router.use("/batches", batchRoutes);
+router.use("/productivity", productivityRoutes);
 
 export default router;
