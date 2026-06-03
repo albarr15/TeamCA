@@ -195,7 +195,7 @@ export default function DeliverableCard({
           size="sm"
           onClick={() => onCopy(link.work_link_id, link.url)}
         >
-          {isCopied ? '✓ Copied' : 'Copy'}
+          {isCopied ? <><span aria-hidden="true">✓</span> Copied</> : 'Copy'}
         </Button>
 
         {/* Delete */}
@@ -222,7 +222,7 @@ export default function DeliverableCard({
               className="border-green-300 bg-green-50 text-green-800 hover:bg-green-100"
               onClick={() => onReview(link.work_link_id, 'approved')}
             >
-              ✓ Approve
+              <span aria-hidden="true">✓</span> Approve
             </Button>
             <Button
               type="button"
@@ -232,7 +232,7 @@ export default function DeliverableCard({
               className="border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
               onClick={() => setRejectOpen((p) => !p)}
             >
-              ✗ Reject
+              <span aria-hidden="true">✗</span> Reject
             </Button>
           </>
         )}
@@ -247,7 +247,7 @@ export default function DeliverableCard({
             className="border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
             onClick={() => setRejectOpen((p) => !p)}
           >
-            ✗ Reject
+            <span aria-hidden="true">✗</span> Reject
           </Button>
         )}
 
@@ -261,7 +261,7 @@ export default function DeliverableCard({
             className="border-green-300 bg-green-50 text-green-800 hover:bg-green-100"
             onClick={() => onReview(link.work_link_id, 'approved')}
           >
-            ✓ Approve
+              <span aria-hidden="true">✓</span> Approve
           </Button>
         )}
       </div>

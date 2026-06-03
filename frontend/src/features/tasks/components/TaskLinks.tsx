@@ -94,7 +94,7 @@ export default function TaskLinks({
       {/* Supervisor pending-review notice — mirrors the feedback section notice pattern */}
       {canReview && pendingCount > 0 && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          <span className="mt-0.5 text-sm">🔍</span>
+          <span className="mt-0.5 text-sm" aria-hidden="true">🔍</span>
           <span>
             <strong>{pendingCount}</strong>{' '}
             {pendingCount === 1 ? 'deliverable is' : 'deliverables are'} awaiting your review.
