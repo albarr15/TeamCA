@@ -1297,12 +1297,19 @@ export const addTaskWorkLink = async (
     );
   }
 
-  // Only Interns (Standard_User with department_role Intern) may submit deliverables.
-  const actorIsIntern =
-    actor.global_role === "Standard_User" && actor.department_role === "Intern";
-  if (!actorIsIntern) {
+  // Only users assigned to this task may submit deliverables.
+  const assignment = await TaskAssignment.findOne({
+    task_id: task._id,
+    assigned_to: actor.user_id,
+  })
+    .select("_id")
+    .lean();
+  const isManager =
+    canManageGlobally(actor.global_role) ||
+    canManageDepartment(actor.department_role);
+  if (!assignment && !isManager) {
     throw new Error(
-      "Only interns can submit deliverable links for tasks.",
+      "Only users assigned to this task can submit deliverable links.",
     );
   }
 
@@ -1703,12 +1710,14 @@ export const getTaskDetail = async (
   const managerCanReview =
     canManageGlobally(actor.global_role) ||
     canManageDepartment(actor.department_role);
-  const actorIsIntern =
-    actor.global_role === "Standard_User" && actor.department_role === "Intern";
+  // Any user assigned to the task can add/delete their own links
+  const actorIsAssigned = assigneeIds.some(
+    (id) => String(id) === String(actor.user_id),
+  );
   const link_permissions: TaskLinkPermissions = {
-    can_add_links: canEditLinksByStatus && actorIsIntern,
+    can_add_links: canEditLinksByStatus && actorIsAssigned,
     can_delete_any_link: canEditLinksByStatus && managerCanReview,
-    can_delete_own_links: canEditLinksByStatus && actorIsIntern,
+    can_delete_own_links: canEditLinksByStatus && actorIsAssigned,
     can_review_links: managerCanReview,
   };
 
