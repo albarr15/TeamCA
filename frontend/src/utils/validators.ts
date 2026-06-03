@@ -26,3 +26,6 @@ export function isValidName(name: string): boolean {
 export function isValidHours(hours: number): boolean {
   return hours > 0 && hours <= 10000;
 }
+
+// Re-exported from deliverableUtils so existing imports keep working
+export { isValidDeliverableUrl as isValidUrl, detectPlatform } from './deliverableUtils';

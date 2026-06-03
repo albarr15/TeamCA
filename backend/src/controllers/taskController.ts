@@ -16,6 +16,7 @@ import {
   listTaskFeedback,
   listTaskStatusHistory,
   listTaskWorkLinks,
+  reviewTaskWorkLink,
   updateTaskDetails,
   updateTaskStatus,
 } from "../services/taskService.js";
@@ -146,6 +147,21 @@ const addTaskWorkLinkSchema = z.object({
     .max(120, "label must be 120 characters or fewer.")
     .optional(),
 });
+
+const reviewTaskWorkLinkSchema = z
+  .object({
+    status: z.enum(["approved", "rejected"]),
+    review_notes: z
+      .string()
+      .trim()
+      .max(1000, "review_notes must be 1000 characters or fewer.")
+      .optional(),
+  })
+  .refine(
+    (val) =>
+      val.status !== "rejected" || (val.review_notes?.trim().length ?? 0) > 0,
+    { message: "review_notes is required when rejecting a deliverable." },
+  );
 
 const listTasksQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -884,7 +900,8 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
         error.message.includes("Invalid status transition") ||
         error.message.includes("already in the requested status") ||
         error.message.includes("are locked") ||
-        error.message.includes("Attach at least one work link")
+        error.message.includes("Attach at least one work link") ||
+        error.message.includes("All deliverable links must be approved")
       ) {
         return res.status(400).json({ message: error.message });
       }
@@ -1290,6 +1307,111 @@ export const listTaskWorkLinksHandler = async (req: Request, res: Response) => {
   }
 };
 
+export const reviewTaskWorkLinkHandler = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required." });
+    }
+
+    const taskId = parseTaskId(req, res);
+    if (!taskId) {
+      return;
+    }
+
+    const rawWorkLinkId = req.params.workLinkId;
+    const workLinkId = Array.isArray(rawWorkLinkId)
+      ? rawWorkLinkId[0]
+      : rawWorkLinkId;
+    if (!workLinkId) {
+      return res.status(400).json({ message: "workLinkId is required." });
+    }
+
+    const payload = reviewTaskWorkLinkSchema.parse(req.body);
+    const reviewed = await reviewTaskWorkLink(req.user, {
+      taskId,
+      workLinkId,
+      status: payload.status,
+      review_notes: payload.review_notes,
+    });
+
+    // Notify the intern who submitted the deliverable
+    const actorId = String(req.user.user_id);
+    const submitterId = reviewed.submitted_by;
+    if (submitterId && submitterId !== actorId) {
+      const [task, actorUser] = await Promise.all([
+        Task.findById(taskId).select("title").lean(),
+        User.findById(actorId).select("first_name last_name email").lean(),
+      ]);
+      if (task) {
+        const actorName = actorUser
+          ? `${actorUser.first_name || ""} ${actorUser.last_name || ""}`.trim() ||
+            actorUser.email
+          : "Your supervisor";
+        const statusLabel =
+          payload.status === "approved" ? "approved" : "rejected";
+        const notifications = await createNotificationsForRecipients(
+          [submitterId],
+          {
+            actorId,
+            eventType: "task_deliverable_reviewed",
+            title: `Deliverable ${statusLabel}`,
+            message: `${actorName} ${statusLabel} your deliverable link for "${task.title}".`,
+            entityType: "task",
+            entityId: taskId,
+            metadata: {
+              task_id: taskId,
+              work_link_id: workLinkId,
+              review_status: payload.status,
+              task_title: task.title,
+            },
+          },
+        );
+        for (const notification of notifications) {
+          emitUsersNotification([notification.recipient_id], notification);
+        }
+      }
+    }
+
+    return res.status(200).json(reviewed);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res
+        .status(400)
+        .json({ message: "Invalid request body.", issues: error.issues });
+    }
+
+    if (error instanceof Error) {
+      if (
+        error.message === "Task not found." ||
+        error.message === "Work link not found."
+      ) {
+        return res.status(404).json({ message: error.message });
+      }
+
+      if (
+        error.message.includes("review_notes is required") ||
+        error.message.includes("All deliverable links")
+      ) {
+        return res.status(400).json({ message: error.message });
+      }
+
+      if (
+        error.message.includes("do not have permission") ||
+        error.message.includes("Only Supervisors")
+      ) {
+        return res.status(403).json({ message: error.message });
+      }
+    }
+
+    return res
+      .status(500)
+      .json({ message: "Failed to review task work link." });
+  }
+};
+
 export const deleteTaskWorkLinkHandler = async (
   req: Request,
   res: Response,
@@ -1457,6 +1579,7 @@ export default {
   addTaskWorkLinkHandler,
   listTaskWorkLinksHandler,
   deleteTaskWorkLinkHandler,
+  reviewTaskWorkLinkHandler,
   listTaskCommentsHandler,
   addTaskCommentHandler,
 };

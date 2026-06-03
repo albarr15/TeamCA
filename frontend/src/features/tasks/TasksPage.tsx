@@ -220,6 +220,7 @@ export default function TasksPage() {
   const [linkDraft, setLinkDraft] = useState({ url: '', label: '' });
   const [linkSubmitting, setLinkSubmitting] = useState(false);
   const [linkDeletingId, setLinkDeletingId] = useState<string | null>(null);
+  const [linkReviewingId, setLinkReviewingId] = useState<string | null>(null);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [modalToasts, setModalToasts] = useState<Array<{ id: string; message: string; exiting: boolean }>>([]);
 
@@ -640,6 +641,7 @@ export default function TasksPage() {
   const canAddLinks = !!taskDetail?.link_permissions.can_add_links;
   const canDeleteAnyLink = !!taskDetail?.link_permissions.can_delete_any_link;
   const canDeleteOwnLink = !!taskDetail?.link_permissions.can_delete_own_links;
+  const canReviewLinks = !!taskDetail?.link_permissions.can_review_links;
 
   const handleUpdateStatus = async (nextStatus: TaskStatus) => {
     // Layer 4 guard: drop the call immediately if a status update is already
@@ -850,6 +852,37 @@ export default function TasksPage() {
       }, 1200);
     } catch {
       setServerError('Copy failed.');
+    }
+  };
+
+  const handleReviewLink = async (
+    workLinkId: string,
+    status: 'approved' | 'rejected',
+    notes?: string,
+  ) => {
+    if (!taskDetail || !canReviewLinks) return;
+    setLinkReviewingId(workLinkId);
+    setServerError('');
+    try {
+      await taskService.reviewTaskWorkLink(
+        String(taskDetail.task_id),
+        workLinkId,
+        { status, review_notes: notes },
+      );
+      const links = await taskService.getTaskWorkLinks(String(taskDetail.task_id));
+      setTaskDetail((prev) => {
+        if (!prev) return prev;
+        return { ...prev, links, links_count: links.length };
+      });
+      pushModalToast(
+        status === 'approved' ? 'Deliverable approved ✓' : 'Deliverable rejected',
+      );
+    } catch (error: any) {
+      setServerError(
+        error?.response?.data?.message || 'Failed to review deliverable.',
+      );
+    } finally {
+      setLinkReviewingId(null);
     }
   };
 
@@ -1218,6 +1251,7 @@ export default function TasksPage() {
         linksSubmitting={linkSubmitting}
         linkDeletingId={linkDeletingId}
         copiedLinkId={copiedLinkId}
+        linkReviewingId={linkReviewingId}
         commentDraft={commentDraft}
         feedbackDraft={feedbackDraft}
         linkDraft={linkDraft}
@@ -1242,6 +1276,7 @@ export default function TasksPage() {
         onAddLink={() => void handleAddLink()}
         onDeleteLink={(workLinkId) => void handleDeleteLink(workLinkId)}
         onCopyLink={(workLinkId, url) => void handleCopyLink(workLinkId, url)}
+        onReviewLink={(workLinkId, status, notes) => void handleReviewLink(workLinkId, status, notes)}
         comments={modalComments}
         feedbackItems={taskFeedbacks}
         links={modalLinks}
@@ -1250,6 +1285,7 @@ export default function TasksPage() {
         canAddLinks={canAddLinks}
         canDeleteAnyLink={canDeleteAnyLink}
         canDeleteOwnLink={canDeleteOwnLink}
+        canReviewLinks={canReviewLinks}
         canEditTaskDetails={canEditTaskDetails}
         onEditTaskDetails={handleOpenEditTaskDetails}
       />

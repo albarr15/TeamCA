@@ -7,6 +7,7 @@ import type {
   CreateTaskPayload,
   DeleteTasksResponse,
   PaginatedTaskListResponse,
+  ReviewTaskWorkLinkPayload,
   Task,
   TaskAssignment,
   TaskComment,
@@ -141,6 +142,18 @@ export const taskService = {
     workLinkId: string,
   ): Promise<void> => {
     await api.delete(`/tasks/${taskId}/work-links/${workLinkId}`);
+  },
+
+  reviewTaskWorkLink: async (
+    taskId: string,
+    workLinkId: string,
+    payload: ReviewTaskWorkLinkPayload,
+  ): Promise<TaskWorkLink> => {
+    const response = await api.patch<TaskWorkLink>(
+      `/tasks/${taskId}/work-links/${workLinkId}/review`,
+      payload,
+    );
+    return response.data;
   },
 
   getTaskComments: async (taskId: string): Promise<TaskComment[]> => {

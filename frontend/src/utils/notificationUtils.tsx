@@ -123,6 +123,15 @@ export const getNotificationIcon = (eventType: NotificationEventType, size: 'sm'
     );
   }
 
+  // Deliverable reviewed (approved or rejected)
+  if (eventType === 'task_deliverable_reviewed') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className={cls} viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+      </svg>
+    );
+  }
+
   // Task status changed / moved back
   if (eventType === 'task_moved_back' || eventType === 'task_status_changed') {
     return (
@@ -213,6 +222,7 @@ export const getNotificationIconStyle = (
     if (eventType === 'task_status_completed') return 'bg-green-100 text-green-600';
     if (eventType === 'task_status_under_review' || eventType === 'task_review_required')
       return 'bg-amber-100 text-amber-600';
+    if (eventType === 'task_deliverable_reviewed') return 'bg-green-100 text-green-600';
     if (eventType === 'task_details_updated') return 'bg-violet-100 text-violet-600';
     if (eventType === 'task_moved_back' || eventType === 'task_status_changed')
       return 'bg-blue-100 text-blue-600';
@@ -240,6 +250,7 @@ export const getNotificationIconStyle = (
   if (eventType === 'task_status_completed') return 'bg-green-50 text-green-400';
   if (eventType === 'task_status_under_review' || eventType === 'task_review_required')
     return 'bg-amber-50 text-amber-400';
+  if (eventType === 'task_deliverable_reviewed') return 'bg-green-50 text-green-400';
   if (eventType === 'task_details_updated') return 'bg-violet-50 text-violet-400';
   if (eventType === 'task_moved_back' || eventType === 'task_status_changed')
     return 'bg-slate-100 text-slate-400';
@@ -552,6 +563,30 @@ export const renderNotificationDetail = (
 
   if (item.event_type === 'task_comment_created' || item.event_type === 'task_feedback_added') {
     return <p className={plainCls}>{item.message}</p>;
+  }
+
+  // ── deliverable reviewed ───────────────────────────────────────────────────
+
+  if (item.event_type === 'task_deliverable_reviewed') {
+    const reviewStatus = metaString(item, 'review_status');
+    const isApproved = reviewStatus === 'approved';
+    return (
+      <p className={cls}>
+        <span>Your deliverable link for</span>
+        {taskTitle ? <span className="font-semibold text-slate-800">"{taskTitle}"</span> : null}
+        <span>was</span>
+        <span
+          className={`rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${
+            isApproved
+              ? 'border-green-200 bg-green-50 text-green-700'
+              : 'border-red-200 bg-red-50 text-red-700'
+          }`}
+        >
+          {isApproved ? 'Approved' : 'Rejected'}
+        </span>
+        <span>.</span>
+      </p>
+    );
   }
 
   // ── generic fallback ───────────────────────────────────────────────────────

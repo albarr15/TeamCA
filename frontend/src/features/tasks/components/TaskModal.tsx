@@ -20,6 +20,7 @@ type TaskModalProps = {
   linksSubmitting: boolean;
   linkDeletingId: string | null;
   copiedLinkId: string | null;
+  linkReviewingId: string | null;
   commentDraft: string;
   feedbackDraft: string;
   linkDraft: { url: string; label: string };
@@ -33,6 +34,7 @@ type TaskModalProps = {
   onAddLink: () => void;
   onDeleteLink: (workLinkId: string) => void;
   onCopyLink: (workLinkId: string, url: string) => void;
+  onReviewLink: (workLinkId: string, status: 'approved' | 'rejected', notes?: string) => void;
   comments: TaskComment[];
   feedbackItems: TaskFeedback[];
   links: TaskWorkLink[];
@@ -41,6 +43,7 @@ type TaskModalProps = {
   canAddLinks: boolean;
   canDeleteAnyLink: boolean;
   canDeleteOwnLink: boolean;
+  canReviewLinks: boolean;
   canEditTaskDetails: boolean;
   onEditTaskDetails: () => void;
 };
@@ -55,6 +58,7 @@ export default function TaskModal({
   linksSubmitting,
   linkDeletingId,
   copiedLinkId,
+  linkReviewingId,
   commentDraft,
   feedbackDraft,
   linkDraft,
@@ -68,6 +72,7 @@ export default function TaskModal({
   onAddLink,
   onDeleteLink,
   onCopyLink,
+  onReviewLink,
   comments,
   feedbackItems,
   links,
@@ -76,6 +81,7 @@ export default function TaskModal({
   canAddLinks,
   canDeleteAnyLink,
   canDeleteOwnLink,
+  canReviewLinks,
   canEditTaskDetails,
   onEditTaskDetails,
 }: TaskModalProps) {
@@ -119,13 +125,16 @@ export default function TaskModal({
               submitting={linksSubmitting}
               deletingId={linkDeletingId}
               copiedId={copiedLinkId}
+              reviewingId={linkReviewingId}
               canAdd={canAddLinks}
               canDeleteAny={canDeleteAnyLink}
               canDeleteOwn={canDeleteOwnLink}
+              canReview={canReviewLinks}
               onDraftChange={onLinkDraftChange}
               onAdd={onAddLink}
               onDelete={onDeleteLink}
               onCopy={onCopyLink}
+              onReview={onReviewLink}
             />
             <TaskFeedbacks
               feedbackItems={feedbackItems}
