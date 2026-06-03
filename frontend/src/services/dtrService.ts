@@ -46,6 +46,16 @@ interface ReminderSettings {
   timezone: string;
 }
 
+export interface ActiveSessionResponse {
+  hasActiveSession: boolean;
+  dtr: DailyTimeRecord | null;
+  clockInTime: string | Date | null;
+  activeBreak: {
+    breakStart: string | Date;
+    type: "lunch" | "rest" | "other";
+  } | null;
+}
+
 export const dtrService = {
   // Basic DTR operations
   clockIn: async (): Promise<DailyTimeRecord> => {
@@ -70,6 +80,17 @@ export const dtrService = {
 
   getDTRRecords: async (): Promise<DailyTimeRecord[]> => {
     const res = await api.get<DTRListResponse>("/dtr/me");
+    return res.data.data;
+  },
+
+  /**
+   * Fetches the current active clock-in session for the user.
+   * Call on page load / socket reconnect to recover state without a full DTR refresh.
+   */
+  getActiveSession: async (): Promise<ActiveSessionResponse> => {
+    const res = await api.get<{ success: boolean; data: ActiveSessionResponse }>(
+      "/dtr/active-session",
+    );
     return res.data.data;
   },
 

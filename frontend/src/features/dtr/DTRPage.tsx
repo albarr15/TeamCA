@@ -39,6 +39,9 @@ export default function DTRPage() {
   const clockOut = useDtrStore((state) => state.clockOut);
   const startBreak = useDtrStore((state) => state.startBreak);
   const endBreak = useDtrStore((state) => state.endBreak);
+  const syncActiveSession = useDtrStore((state) => state.syncActiveSession);
+  const activeSessionConflict = useDtrStore((state) => state.activeSessionConflict);
+  const clearActiveSessionConflict = useDtrStore((state) => state.clearActiveSessionConflict);
 
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -100,6 +103,15 @@ export default function DTRPage() {
     return `${hours}h ${mins}m`;
   };
 
+  const formatTime = (date: Date | string | null) => {
+    if (!date) return "—";
+    return new Date(date).toLocaleTimeString("en-PH", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   const totalMinutesWorked = clockInTime
     ? Math.max(
         0,
@@ -128,7 +140,8 @@ export default function DTRPage() {
   React.useEffect(() => {
     const fetchDTR = async () => {
       try {
-        await refreshRecords();
+        // Refresh full record list and also sync active session state
+        await Promise.all([refreshRecords(), syncActiveSession()]);
       } catch (err) {
         // handled
       } finally {
@@ -245,7 +258,10 @@ export default function DTRPage() {
     try {
       setActionError(null);
       await clockIn();
-      window.location.reload();
+      // activeSessionConflict will be set in the store if 409 conflict is received
+      if (!useDtrStore.getState().activeSessionConflict) {
+        window.location.reload();
+      }
     } catch (err) {
       const message = (err as any)?.response?.data?.message ||
         (err instanceof Error ? err.message : "Failed to clock in");
@@ -354,6 +370,13 @@ export default function DTRPage() {
     setShowExportModal(true);
   };
 
+  // Handler when user dismisses the active session conflict modal
+  // by choosing to clock out of the existing session first
+  const handleGoToClockOut = () => {
+    clearActiveSessionConflict();
+    handleOpenClockOut();
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-center">
@@ -444,6 +467,61 @@ export default function DTRPage() {
           onRemind={() => setShowReminderModal(true)}
         />
       </Card>
+
+      {/* ACTIVE SESSION CONFLICT MODAL */}
+      <Dialog
+        open={Boolean(activeSessionConflict)}
+        onOpenChange={(v) => { if (!v) clearActiveSessionConflict(); }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Active Session Detected</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <p className="font-semibold mb-1">You're already clocked in</p>
+              <p>
+                You have an active clock-in session that hasn't been closed. You must clock out
+                before starting a new session.
+              </p>
+            </div>
+
+            {activeSessionConflict?.clockInTime && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Clocked in at</span>
+                  <span className="font-medium tabular-nums">
+                    {formatTime(activeSessionConflict.clockInTime)}
+                  </span>
+                </div>
+                {activeSessionConflict.activeBreak && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Break started at</span>
+                    <span className="font-medium tabular-nums">
+                      {formatTime(activeSessionConflict.activeBreak.breakStart)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => clearActiveSessionConflict()}
+              >
+                Dismiss
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleGoToClockOut}
+              >
+                Clock Out Now
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* CLOCK OUT MODAL */}
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setShowActivityWarning(false); }}>

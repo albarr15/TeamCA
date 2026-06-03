@@ -99,6 +99,36 @@ const computeAttendance = (timeIn: Date) => {
 };
 
 /**
+ * CHECK ACTIVE SESSION
+ * Returns the current active DTR session for a user (if any).
+ * Used by the frontend on reconnect/refresh to recover state.
+ */
+export const getActiveSession = async (userId: string) => {
+  const today = getTodayPH();
+  const dtr = await DTR.findOne({ userId, date: today });
+
+  if (!dtr || dtr.clocks.length === 0) {
+    return { hasActiveSession: false, dtr: null };
+  }
+
+  const lastClock = dtr.clocks[dtr.clocks.length - 1];
+  const hasActiveSession = Boolean(lastClock?.timeIn && !lastClock?.timeOut);
+
+  return {
+    hasActiveSession,
+    dtr: hasActiveSession ? dtr : null,
+    clockInTime: hasActiveSession ? lastClock.timeIn : null,
+    activeBreak:
+      hasActiveSession && lastClock.breaks && lastClock.breaks.length > 0
+        ? (() => {
+            const last = lastClock.breaks[lastClock.breaks.length - 1];
+            return !last.breakEnd ? last : null;
+          })()
+        : null,
+  };
+};
+
+/**
  * TIME IN
  */
 export const timeIn = async (userId: string) => {
@@ -130,7 +160,26 @@ export const timeIn = async (userId: string) => {
   }
 
   const lastClock = dtr.clocks[dtr.clocks.length - 1];
-  if (lastClock && !lastClock.timeOut) return dtr;
+
+  // Active session prevention: if the last clock entry has no timeOut,
+  // the user is already clocked in — return a structured error with session info
+  if (lastClock && !lastClock.timeOut) {
+    const err: any = new Error("You already have an active clock-in session. Please clock out first.");
+    err.code = "ACTIVE_SESSION";
+    err.activeSession = {
+      dtrId: dtr._id,
+      clockInTime: lastClock.timeIn,
+      attendanceStatus: dtr.attendanceStatus,
+      activeBreak:
+        lastClock.breaks && lastClock.breaks.length > 0
+          ? (() => {
+              const last = lastClock.breaks[lastClock.breaks.length - 1];
+              return !last.breakEnd ? last : null;
+            })()
+          : null,
+    };
+    throw err;
+  }
 
   dtr.attendanceStatus = attendanceStatus;
   dtr.clocks.push({ timeIn: now, status: attendanceStatus });

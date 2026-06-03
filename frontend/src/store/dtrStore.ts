@@ -47,6 +47,13 @@ const mergeRecordIntoState = (
   return merged;
 };
 
+export interface ActiveSessionConflict {
+  dtrId: string;
+  clockInTime: string | Date;
+  attendanceStatus?: string;
+  activeBreak: { breakStart: string | Date; type: string } | null;
+}
+
 interface DtrState {
   records: DailyTimeRecord[];
   setRecords: (records: DailyTimeRecord[]) => void;
@@ -59,6 +66,11 @@ interface DtrState {
   clockOut: (remarks: string) => Promise<void>;
   startBreak: (breakType?: string) => Promise<void>;
   endBreak: () => Promise<void>;
+  /** Fetch and sync active session from backend (call on mount / reconnect) */
+  syncActiveSession: () => Promise<void>;
+  /** Non-null when the server rejects a clock-in due to an existing open session */
+  activeSessionConflict: ActiveSessionConflict | null;
+  clearActiveSessionConflict: () => void;
 }
 
 export const useDtrStore = create<DtrState>((set, get) => ({
@@ -75,16 +87,55 @@ export const useDtrStore = create<DtrState>((set, get) => ({
   setClockedIn: (v) => set({ clockedIn: v }),
   isOnBreak: false,
   setIsOnBreak: (v) => set({ isOnBreak: v }),
+
+  activeSessionConflict: null,
+  clearActiveSessionConflict: () => set({ activeSessionConflict: null }),
+
+  /**
+   * syncActiveSession — call on page mount or socket reconnect.
+   * Hits GET /dtr/active-session and reconciles local clockedIn / isOnBreak
+   * flags without requiring a full record list reload.
+   */
+  syncActiveSession: async () => {
+    try {
+      const session = await dtrService.getActiveSession();
+      if (session.hasActiveSession && session.dtr) {
+        set((state) => {
+          const records = mergeRecordIntoState(state.records, session.dtr!);
+          return { records, ...syncFlagsFromRecords(records) };
+        });
+      } else {
+        // No active session on server — ensure local flags are cleared
+        set({ clockedIn: false, isOnBreak: false });
+      }
+    } catch (_err) {
+      // Non-fatal: silently fall back to existing state
+    }
+  },
+
   clockIn: async () => {
     try {
+      // Clear any stale conflict before attempting
+      set({ activeSessionConflict: null });
       const updatedRecord = await dtrService.clockIn();
       set((state) => {
         const records = mergeRecordIntoState(state.records, updatedRecord);
         return { records, ...syncFlagsFromRecords(records) };
       });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "";
-      // If server says already clocked in, refresh records to sync state
+      const status = err?.response?.status;
+      const body = err?.response?.data;
+
+      // 409 = active session already exists — surface the conflict for the warning modal
+      if (status === 409 && body?.code === "ACTIVE_SESSION") {
+        set({ activeSessionConflict: body.activeSession ?? null });
+        // Refresh records so the UI reflects the real server state
+        await get().refreshRecords();
+        return;
+      }
+
+      const msg = body?.message || err?.message || "";
+      // Legacy: server returned 400 with "already clocked in" text
       if (
         typeof msg === "string" &&
         msg.toLowerCase().includes("already clocked in")
@@ -98,6 +149,7 @@ export const useDtrStore = create<DtrState>((set, get) => ({
 
     await get().refreshRecords();
   },
+
   clockOut: async (remarks: string) => {
     try {
       const updatedRecord = await dtrService.clockOut(remarks);
@@ -127,6 +179,7 @@ export const useDtrStore = create<DtrState>((set, get) => ({
     get().setClockedIn(false);
     await get().refreshRecords();
   },
+
   startBreak: async (breakType = "rest") => {
     const updatedRecord = await dtrService.startBreak(breakType);
     set((state) => {
@@ -135,6 +188,7 @@ export const useDtrStore = create<DtrState>((set, get) => ({
     });
     await get().refreshRecords();
   },
+
   endBreak: async () => {
     const updatedRecord = await dtrService.endBreak();
     set((state) => {
