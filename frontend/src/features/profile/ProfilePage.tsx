@@ -10,6 +10,7 @@ import UserIdenticon from '../../components/common/UserIdenticon';
 import { useDtrStore } from '../../store/dtrStore';
 import { useDtrSocket } from '../dtr/hooks/useDtrSocket';
 import type { DailyTimeRecord } from '../../types/dtr';
+import NotificationPreferences from '../../components/notifications/NotificationPreferences';
 
 const HOURS_PER_DAY = 9;
 
@@ -541,6 +542,10 @@ export default function ProfilePage() {
               </div>
             )}
           </Card>
+        </div>
+
+        <div className="mt-4">
+          <NotificationPreferences />
         </div>
       </div>
     </div>

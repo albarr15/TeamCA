@@ -2,6 +2,7 @@ import api from "./api";
 import type {
   NotificationItem,
   NotificationListResponse,
+  NotificationPreferences,
 } from "../types/notification";
 
 type ListNotificationsInput = {
@@ -36,6 +37,23 @@ export const notificationService = {
   markAllAsRead: async (): Promise<{ updated_count: number }> => {
     const response = await api.patch<{ updated_count: number }>(
       "/notifications/read-all",
+    );
+    return response.data;
+  },
+
+  getPreferences: async (): Promise<NotificationPreferences> => {
+    const response = await api.get<NotificationPreferences>(
+      "/notifications/preferences",
+    );
+    return response.data;
+  },
+
+  updatePreferences: async (
+    updates: Partial<NotificationPreferences>,
+  ): Promise<NotificationPreferences> => {
+    const response = await api.patch<NotificationPreferences>(
+      "/notifications/preferences",
+      updates,
     );
     return response.data;
   },
