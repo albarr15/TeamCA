@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 
 import AddUserModal from "../../components/superadmin/AddUserModal";
 import UpdateUserModal from "../../components/superadmin/UpdateUserModal";
+import CsvImport from "./CsvImport";
 
 import { Edit, Trash2, CircleStop } from "lucide-react";
 
@@ -32,6 +33,9 @@ export default function UserDirectory() {
   const { token, isHydrated, user: currentUser } = useAuthStore();
 
   const isSuperadmin = currentUser?.global_role === "Superadmin";
+  const canImportUsers =
+    currentUser?.global_role === "Superadmin" ||
+    currentUser?.global_role === "Admin";
   const isSupervisorAdmin = currentUser?.global_role === "Admin" && currentUser?.departments?.[0]?.department_role === "Supervisor";
   const isHeadAdmin = currentUser?.global_role === "Admin" && currentUser?.departments?.[0]?.department_role === "Head";
 
@@ -221,6 +225,8 @@ export default function UserDirectory() {
           </Button>
         ) : null}
       </div>
+
+      {canImportUsers ? <CsvImport onImportComplete={fetchUsers} /> : null}
 
       <Card className="overflow-hidden rounded-2xl border p-0 shadow-sm">
         <div className="overflow-x-auto">

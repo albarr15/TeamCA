@@ -10,7 +10,9 @@ import {
   createUser,
   deleteUser,
 } from "../controllers/userController.js";
+import { importUsersFromCsv } from "../controllers/importController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { uploadCsv } from "../middlewares/uploadMiddleware.js";
 import { requireAnyRole, requireGlobalRole } from "../middlewares/rbac.js";
 
 const router = express.Router();
@@ -34,6 +36,14 @@ router.delete(
   authMiddleware,
   requireGlobalRole("Superadmin"),
   deleteWhitelistedUserHandler,
+);
+
+router.post(
+  "/import",
+  authMiddleware,
+  requireGlobalRole("Superadmin", "Admin"),
+  uploadCsv,
+  importUsersFromCsv,
 );
 
 router.get(
