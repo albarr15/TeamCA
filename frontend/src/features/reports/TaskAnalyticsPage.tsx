@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import type { TaskListItem } from '../../types/task';
 import { StatCardSkeleton } from '../../components/ui/Skeleton';
+import { isOverdueDeadline } from '../../utils/dateUtils';
 
 interface TaskStats {
   totalTasks: number;
@@ -55,11 +56,9 @@ export default function TaskAnalyticsPage() {
       });
 
       const completed = filteredTasks.filter((t) => t.status === 'Completed').length;
-      const overdue = filteredTasks.filter((t) => {
-        if (t.status === 'Completed') return false;
-        if (!t.deadline) return false;
-        return new Date(t.deadline) < now;
-      }).length;
+      const overdue = filteredTasks.filter((t) =>
+        t.is_overdue ?? isOverdueDeadline(t.deadline, t.status)
+      ).length;
 
       const statusCounts: Record<string, number> = {};
       const priorityCounts: Record<string, number> = {};
