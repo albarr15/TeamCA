@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { useDtrSocket } from "./hooks/useDtrSocket";
+import { useActivityLogDraft } from "./hooks/useActivityLogDraft";
 
 export default function DTRPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -51,6 +52,9 @@ export default function DTRPage() {
   const [activityLogError, setActivityLogError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showActivityWarning, setShowActivityWarning] = useState(false);
+
+  // Draft auto-save: restores unfinished log after refresh / tab close
+  const { clearDraft } = useActivityLogDraft(activityLog, setActivityLog);
 
   const MIN_ACTIVITY_LENGTH = 20;
   const [showExportModal, setShowExportModal] = useState(false);
@@ -284,6 +288,7 @@ export default function DTRPage() {
 
       await clockOut(trimmed);
 
+      clearDraft();
       setActivityLog("");
       setOpen(false);
       setShowActivityWarning(false);
@@ -572,6 +577,9 @@ export default function DTRPage() {
                 </div>
               )}
               <div className="space-y-1">
+                {activityLog.trim().length > 0 && !submitting && (
+                  <p className="text-xs text-slate-400 italic">Draft saved</p>
+                )}
                 <textarea
                   value={activityLog}
                   onChange={(e) => {
@@ -581,6 +589,7 @@ export default function DTRPage() {
                   placeholder="e.g. Completed the dashboard UI redesign, fixed 3 reported bugs in the login flow, attended team standup..."
                   className="w-full border rounded-md p-2 text-sm min-h-[120px] resize-y"
                   maxLength={500}
+                  disabled={submitting}
                 />
                 <div className="flex justify-between text-xs text-slate-400">
                   <span>
