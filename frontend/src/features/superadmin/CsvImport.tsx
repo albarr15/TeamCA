@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertCircle,
   CheckCircle,
@@ -6,6 +7,7 @@ import {
   Download,
   FileText,
   Upload,
+  X,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import {
@@ -134,6 +136,12 @@ export default function CsvImport({ onImportComplete }: CsvImportProps) {
   };
 
   const failedRows = result?.failed_rows ?? [];
+  const reset = () => {
+    setStatus("idle");
+    setResult(null);
+    setError(null);
+    setShowFailedRows(false);
+  };
 
   return (
     <Card>
@@ -165,46 +173,49 @@ export default function CsvImport({ onImportComplete }: CsvImportProps) {
           onChange={(event) => void importFile(event.target.files?.[0])}
         />
 
-        {status === "idle" || status === "error" ? (
-          <button
-            type="button"
-            className={`flex min-h-36 w-full flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-4 py-6 text-center transition-colors ${
-              isDragging
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-slate-300 bg-slate-50 text-slate-600 hover:border-blue-400 hover:bg-blue-50"
-            }`}
-            onClick={() => inputRef.current?.click()}
-            onDragEnter={(event) => {
-              event.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(event) => {
-              event.preventDefault();
-              setIsDragging(false);
-              void importFile(event.dataTransfer.files?.[0]);
-            }}
-          >
-            <Upload className="h-7 w-7" />
-            <span className="text-sm font-medium">
-              Drop CSV file or choose file
-            </span>
-            <span className="text-xs text-slate-500">
-              Required: first_name, last_name, email, password, global_role
-            </span>
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className={`flex min-h-36 w-full flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-4 py-6 text-center transition-colors ${
+            isDragging
+              ? "border-blue-500 bg-blue-50 text-blue-700"
+              : "border-slate-300 bg-slate-50 text-slate-600 hover:border-blue-400 hover:bg-blue-50"
+          }`}
+          onClick={() => inputRef.current?.click()}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragging(false);
+            void importFile(event.dataTransfer.files?.[0]);
+          }}
+        >
+          <Upload className="h-7 w-7" />
+          <span className="text-sm font-medium">
+            Drop CSV file or choose file
+          </span>
+          <span className="text-xs text-slate-500">
+            Required: first_name, last_name, email, password, global_role
+          </span>
+        </button>
 
-        {status === "loading" ? (
-          <div className="flex min-h-36 items-center justify-center gap-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600">
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-            Processing...
-          </div>
-        ) : null}
+        {status === "loading"
+          ? createPortal(
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+                <div className="flex w-full max-w-sm items-center gap-3 rounded-lg bg-white p-6 shadow-xl">
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                  Processing CSV...
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
 
         {status === "error" && error ? (
           <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -214,127 +225,133 @@ export default function CsvImport({ onImportComplete }: CsvImportProps) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => {
-                setStatus("idle");
-                setError(null);
-              }}
+              onClick={reset}
             >
               Retry
             </Button>
           </div>
         ) : null}
 
-        {status === "result" && result ? (
-          <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-slate-200 p-4">
-                <div className="text-xs uppercase tracking-wide text-slate-500">
-                  Processed
-                </div>
-                <div className="mt-1 text-2xl font-semibold text-slate-900">
-                  {result.total_processed}
-                </div>
-              </div>
-              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-green-700">
-                  <CheckCircle className="h-4 w-4" />
-                  Created
-                </div>
-                <div className="mt-1 text-2xl font-semibold text-green-800">
-                  {result.successful_inserts}
-                </div>
-              </div>
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-red-700">
-                  <AlertCircle className="h-4 w-4" />
-                  Failed
-                </div>
-                <div className="mt-1 text-2xl font-semibold text-red-800">
-                  {failedRows.length}
-                </div>
-              </div>
-            </div>
-
-            {failedRows.length > 0 ? (
-              <div className="rounded-lg border border-slate-200">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-slate-800"
-                    onClick={() => setShowFailedRows((value) => !value)}
-                  >
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform ${
-                        showFailedRows ? "rotate-180" : ""
-                      }`}
-                    />
-                    Failed rows
-                  </button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => downloadErrorCsv(failedRows)}
-                    title="Download failed row report"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Error CSV
-                  </Button>
-                </div>
-
-                {showFailedRows ? (
-                  <div className="max-h-72 overflow-auto">
-                    <table className="w-full min-w-[720px] text-sm">
-                      <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                        <tr>
-                          <th className="px-4 py-3">Email</th>
-                          <th className="px-4 py-3">Name</th>
-                          <th className="px-4 py-3">Role</th>
-                          <th className="px-4 py-3">Reason</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {failedRows.map((failedRow, index) => (
-                          <tr key={`${failedRow.row.email}-${index}`} className="border-t">
-                            <td className="px-4 py-3">
-                              {failedRow.row.email || "-"}
-                            </td>
-                            <td className="px-4 py-3">
-                              {`${failedRow.row.first_name || ""} ${
-                                failedRow.row.last_name || ""
-                              }`.trim() || "-"}
-                            </td>
-                            <td className="px-4 py-3">
-                              {failedRow.row.global_role || "-"}
-                            </td>
-                            <td className="px-4 py-3 text-red-700">
-                              {failedRow.reason}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+        {status === "result" && result
+          ? createPortal(
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+                <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="font-semibold text-lg">Import Summary</h3>
+                    <button type="button" onClick={reset} className="text-slate-500 hover:text-slate-800">
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                ) : null}
-              </div>
-            ) : null}
+                  <div className="space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg border border-slate-200 p-4">
+                        <div className="text-xs uppercase tracking-wide text-slate-500">
+                          Processed
+                        </div>
+                        <div className="mt-1 text-2xl font-semibold text-slate-900">
+                          {result.total_processed}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-green-700">
+                          <CheckCircle className="h-4 w-4" />
+                          Created
+                        </div>
+                        <div className="mt-1 text-2xl font-semibold text-green-800">
+                          {result.successful_inserts}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-red-700">
+                          <AlertCircle className="h-4 w-4" />
+                          Failed
+                        </div>
+                        <div className="mt-1 text-2xl font-semibold text-red-800">
+                          {failedRows.length}
+                        </div>
+                      </div>
+                    </div>
 
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setStatus("idle");
-                  setResult(null);
-                  setShowFailedRows(false);
-                }}
-              >
-                Import Another CSV
-              </Button>
-            </div>
-          </div>
-        ) : null}
+                    {failedRows.length > 0 ? (
+                      <div className="rounded-lg border border-slate-200">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-slate-800"
+                            onClick={() => setShowFailedRows((value) => !value)}
+                          >
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform ${
+                                showFailedRows ? "rotate-180" : ""
+                              }`}
+                            />
+                            Failed rows
+                          </button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => downloadErrorCsv(failedRows)}
+                            title="Download failed row report"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Error CSV
+                          </Button>
+                        </div>
+
+                        {showFailedRows ? (
+                          <div className="max-h-60 overflow-auto">
+                            <table className="w-full min-w-[560px] text-sm">
+                              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                                <tr>
+                                  <th className="px-4 py-3">Email</th>
+                                  <th className="px-4 py-3">Name</th>
+                                  <th className="px-4 py-3">Role</th>
+                                  <th className="px-4 py-3">Reason</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {failedRows.map((failedRow, index) => (
+                                  <tr key={`${failedRow.row.email}-${index}`} className="border-t">
+                                    <td className="px-4 py-3">
+                                      {failedRow.row.email || "-"}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {`${failedRow.row.first_name || ""} ${
+                                        failedRow.row.last_name || ""
+                                      }`.trim() || "-"}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {failedRow.row.global_role || "-"}
+                                    </td>
+                                    <td className="px-4 py-3 text-red-700">
+                                      {failedRow.reason}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={reset}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
       </CardContent>
     </Card>
   );

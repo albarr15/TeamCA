@@ -57,6 +57,16 @@ export default function UserDirectory() {
     }
   }, []);
 
+  // Silent refresh — does NOT set loading=true so CsvImport stays mounted
+  const refreshUsers = useCallback(async () => {
+    try {
+      const data = await userService.getAllUsers();
+      setUsers(data);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const scheduleRefresh = useCallback(() => {
     if (refreshTimerRef.current) {
       window.clearTimeout(refreshTimerRef.current);
@@ -226,7 +236,7 @@ export default function UserDirectory() {
         ) : null}
       </div>
 
-      {canImportUsers ? <CsvImport onImportComplete={fetchUsers} /> : null}
+      {canImportUsers ? <CsvImport onImportComplete={refreshUsers} /> : null}
 
       <Card className="overflow-hidden rounded-2xl border p-0 shadow-sm">
         <div className="overflow-x-auto">
