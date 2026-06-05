@@ -103,7 +103,7 @@ export default function ProperClockCard({
             {getStatusText()}
           </div>
 
-          {/* Action Button */}
+          {/* Primary action button */}
           <button
             onClick={clockedIn ? onClockOut : onClockIn}
             className={`w-full py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -115,25 +115,25 @@ export default function ProperClockCard({
             {clockedIn ? 'Clock Out' : 'Clock In'}
           </button>
 
-          {/* Take Break - only visible when clocked in */}
+          {/* Take Break — only visible when clocked in and not on break */}
           {clockedIn && !isOnBreak && onStartBreak && (
             <button
               onClick={onStartBreak}
               disabled={breakLoading}
               className="w-full py-1.5 rounded-lg text-xs font-semibold bg-yellow-100 hover:bg-yellow-200 text-yellow-900 transition-all disabled:opacity-50"
             >
-              {breakLoading ? 'Starting...' : 'Take Break'}
+              {breakLoading ? 'Starting break…' : 'Take Break'}
             </button>
           )}
 
-          {/* Resume Work - only visible on break */}
+          {/* End Break — only visible while on break */}
           {isOnBreak && onEndBreak && (
             <button
               onClick={onEndBreak}
               disabled={breakLoading}
               className="w-full py-1.5 rounded-lg text-xs font-semibold bg-green-100 hover:bg-green-200 text-green-900 transition-all disabled:opacity-50"
             >
-              {breakLoading ? 'Resuming...' : 'Resume Work'}
+              {breakLoading ? 'Ending break…' : 'End Break'}
             </button>
           )}
         </div>
@@ -227,7 +227,7 @@ export default function ProperClockCard({
                   disabled={breakLoading}
                   className="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-300 disabled:opacity-50"
                 >
-                  {breakLoading ? 'Starting...' : 'Take Break'}
+                  {breakLoading ? 'Starting break…' : 'Take Break'}
                 </Button>
               )}
 
@@ -237,7 +237,7 @@ export default function ProperClockCard({
                   disabled={breakLoading}
                   className="w-full bg-green-100 hover:bg-green-200 text-green-900 border-green-300 disabled:opacity-50"
                 >
-                  {breakLoading ? 'Resuming...' : 'Resume Work'}
+                  {breakLoading ? 'Ending break…' : 'End Break'}
                 </Button>
               )}
             </>

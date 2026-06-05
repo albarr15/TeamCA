@@ -12,9 +12,14 @@ import DtrAnalyticsWidget from '../../components/widgets/DtrAnalyticsWidget';
 import TaskBriefWidget from '../../components/widgets/TaskBriefWidget';
 import MembersBriefWidget from '../../components/widgets/MembersBriefWidget';
 import BatchesBriefWidget from '../../components/widgets/BatchesBriefWidget';
+import InternProductivityHero from '../../components/widgets/InternProductivityHero';
+import WeeklySummaryCard from '../../components/widgets/WeeklySummaryCard';
+import RecentCompletionsCard from '../../components/widgets/RecentCompletionsCard';
 import { CalendarSkeleton, StatCardSkeleton } from '../../components/ui/Skeleton';
 import { useUserDirectorySocket } from '../../hooks/useUserDirectorySocket';
 import { useTaskListSocket } from '../../hooks/useTaskListSocket';
+import { productivityService } from '../../services/productivityService';
+import type { ProductivitySummary } from '../../types/productivity';
 
 export default function RoleDashboard() {
   const { user, isIntern, canManageOwnDepartment, canViewAllDepartments } = useAuthStore((state) => ({
@@ -28,6 +33,10 @@ export default function RoleDashboard() {
   const [dtrRecords, setDtrRecords] = useState<DailyTimeRecord[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [productivity, setProductivity] = useState<ProductivitySummary | null>(null);
+  const [productivityLoading, setProductivityLoading] = useState(true);
+
+  const internView = !!user && isIntern();
 
   useEffect(() => {
     if (!user) {
@@ -74,6 +83,24 @@ export default function RoleDashboard() {
 
   useTaskListSocket(refreshTasks);
 
+  // Productivity summary: only fetched for interns (the only audience for these widgets)
+  const refreshProductivity = useCallback(() => {
+    if (!user || !internView) return;
+    setProductivityLoading(true);
+    productivityService
+      .getMine()
+      .then((data) => setProductivity(data))
+      .catch(() => setProductivity(null))
+      .finally(() => setProductivityLoading(false));
+  }, [user, internView]);
+
+  useEffect(() => {
+    refreshProductivity();
+  }, [refreshProductivity]);
+
+  // Re-fetch productivity when tasks change (so completions update live)
+  useTaskListSocket(refreshProductivity);
+
   const visibleTasks = useMemo(() => {
     if (!user) {
       return [];
@@ -111,6 +138,36 @@ export default function RoleDashboard() {
 
   const totalOpenTasks = visibleTasks.filter((task) => task.status !== 'Completed').length;
   const completedTasks = visibleTasks.filter((task) => task.status === 'Completed').length;
+
+  if (internView) {
+    return (
+      <div className="space-y-5">
+        <InternProductivityHero
+          summary={productivity}
+          isLoading={productivityLoading}
+        />
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <WeeklySummaryCard
+            summary={productivity}
+            isLoading={productivityLoading}
+          />
+          <RecentCompletionsCard
+            summary={productivity}
+            isLoading={productivityLoading}
+          />
+        </section>
+
+        <section className="grid gap-4 xl:grid-cols-[2fr,1fr]">
+          <div className="space-y-4">
+            <DtrAnalyticsWidget records={dtrRecords} isLoading={isLoading} />
+            <TaskBriefWidget tasks={visibleTasks} isLoading={isLoading} />
+          </div>
+          <div>{isLoading ? <CalendarSkeleton /> : <CalendarWidget />}</div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
