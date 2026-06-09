@@ -42,10 +42,10 @@ export default function TaskTable({
         <thead className="border-b border-slate-200 bg-slate-100/70 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
           <tr>
             {selectionMode ? <th className="w-12 px-4 py-3" aria-label="Select" /> : null}
-            <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3">Task Title</th>
-            <th className="px-4 py-3">Assigned Users</th>
+            <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3">Priority</th>
+            <th className="px-4 py-3">Assigned Users</th>
             <th className="px-4 py-3">Deadline</th>
             <th className="w-20 px-4 py-3 text-center">Comments</th>
           </tr>

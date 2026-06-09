@@ -150,19 +150,19 @@ export default function DeliverableCard({
 
   return (
     <div
-      className={`rounded-xl border p-3.5 transition-shadow hover:shadow-sm ${CARD_STATUS_CLS[status]}`}
+      className={`rounded-xl border p-4 transition-shadow hover:shadow-sm ${CARD_STATUS_CLS[status]}`}
     >
       {/* Header: platform chip + status badge */}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold
             ${platformText} ${platformBorder} ${platformBg}`}
         >
           <PlatformIcon platform={platform} />
           {PLATFORM_LABELS[platform]}
         </span>
         <span
-          className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusCls}`}
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusCls}`}
         >
           {statusLabel}
         </span>
