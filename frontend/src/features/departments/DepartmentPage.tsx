@@ -48,21 +48,31 @@ export default function DepartmentPage() {
 
   const isSuperadmin = currentUser?.global_role === 'Superadmin';
   const isAdmin = currentUser?.global_role === 'Admin';
+  const isHead = currentUser?.departments?.[0]?.department_role === 'Head';
+  const headDepartmentId = currentUser?.departments?.[0]?.department_id;
+
+  // Heads can manage (edit) only their own department; never create/delete.
+  const canManageAllDepartments = isSuperadmin || (isAdmin && !isHead);
+  const canEditDepartment = (dept: Department): boolean => {
+    if (canManageAllDepartments) return true;
+    if (isHead) return dept._id === headDepartmentId || dept._id === String(headDepartmentId);
+    return false;
+  };
 
   useEffect(() => {
     fetchDepartments();
-    if (isSuperadmin || isAdmin) {
+    if (isSuperadmin || isAdmin || isHead) {
       fetchUsers();
     }
-  }, [isSuperadmin, isAdmin]);
+  }, [isSuperadmin, isAdmin, isHead]);
 
   // Live refresh: when users are created/updated/deleted elsewhere,
   // re-pull the head dropdown options.
   const handleDirectoryUpdate = useCallback(() => {
-    if (isSuperadmin || isAdmin) {
+    if (isSuperadmin || isAdmin || isHead) {
       fetchUsers();
     }
-  }, [isSuperadmin, isAdmin]);
+  }, [isSuperadmin, isAdmin, isHead]);
 
   useUserDirectorySocket(handleDirectoryUpdate);
 
@@ -113,12 +123,21 @@ export default function DepartmentPage() {
     setIsDetailModalOpen(true);
   };
 
-  const totalPages = Math.max(1, Math.ceil(departments.length / DEPARTMENTS_PER_PAGE));
+  // Heads must only ever see their own department — filter the raw API
+  // response as a safety net even if the backend already scoped it.
+  const visibleDepartments = useMemo(() => {
+    if (!isHead) return departments;
+    return departments.filter(
+      (d) => d._id === headDepartmentId || d._id === String(headDepartmentId),
+    );
+  }, [departments, isHead, headDepartmentId]);
+
+  const totalPages = Math.max(1, Math.ceil(visibleDepartments.length / DEPARTMENTS_PER_PAGE));
   const safePage = Math.min(page, totalPages);
   const pagedDepartments = useMemo(() => {
     const start = (safePage - 1) * DEPARTMENTS_PER_PAGE;
-    return departments.slice(start, start + DEPARTMENTS_PER_PAGE);
-  }, [departments, safePage]);
+    return visibleDepartments.slice(start, start + DEPARTMENTS_PER_PAGE);
+  }, [visibleDepartments, safePage]);
 
   useEffect(() => {
     if (page !== safePage) setPage(safePage);
@@ -209,9 +228,13 @@ export default function DepartmentPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Department Management</h1>
-          <p className="text-sm text-slate-600 mt-1">Manage departments and assign heads</p>
+          <p className="text-sm text-slate-600 mt-1">
+            {isHead
+              ? 'Viewing your department'
+              : 'Manage departments and assign heads'}
+          </p>
         </div>
-        {(isSuperadmin || isAdmin) && (
+        {canManageAllDepartments && (
           <Button
             onClick={handleCreateClick}
             className="flex items-center gap-2"
@@ -243,7 +266,7 @@ export default function DepartmentPage() {
             <WidgetSkeleton key={i} lines={3} />
           ))}
         </div>
-      ) : departments.length === 0 ? (
+      ) : visibleDepartments.length === 0 ? (
         <Card>
           <div className="text-center py-12">
             <Users className="mx-auto mb-4 text-slate-400" size={48} />
@@ -281,7 +304,7 @@ export default function DepartmentPage() {
                 </div>
 
                 {/* Actions */}
-                {(isSuperadmin || isAdmin) && (
+                {canEditDepartment(dept) && (
                   <div className="flex gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => {
@@ -293,28 +316,30 @@ export default function DepartmentPage() {
                     >
                       <Edit2 size={18} />
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(dept);
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete department"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {canManageAllDepartments && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(dept);
+                        }}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete department"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             </Card>
           ))}
 
-          {departments.length > DEPARTMENTS_PER_PAGE && (
+          {visibleDepartments.length > DEPARTMENTS_PER_PAGE && (
             <div className="flex items-center justify-between pt-2 text-sm text-slate-600">
               <span>
                 Showing {(safePage - 1) * DEPARTMENTS_PER_PAGE + 1}–
-                {Math.min(safePage * DEPARTMENTS_PER_PAGE, departments.length)} of{' '}
-                {departments.length}
+                {Math.min(safePage * DEPARTMENTS_PER_PAGE, visibleDepartments.length)} of{' '}
+                {visibleDepartments.length}
               </span>
               <div className="flex items-center gap-2">
                 <Button
@@ -523,4 +548,3 @@ export default function DepartmentPage() {
     </div>
   );
 }
-
