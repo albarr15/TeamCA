@@ -3,6 +3,17 @@ import { User, UserProfile } from "../types/user";
 
 export type UserProfileResponse = UserProfile;
 
+export type ImportFailedRow = {
+  row: Record<string, string>;
+  reason: string;
+};
+
+export type ImportResult = {
+  total_processed: number;
+  successful_inserts: number;
+  failed_rows: ImportFailedRow[];
+};
+
 // safe API error shape
 type ApiError = {
   response?: {
@@ -47,6 +58,17 @@ export const userService = {
 
   createUser: async (payload: CreateUserPayload): Promise<User> => {
     const { data } = await api.post<User>("/users", payload);
+    return data;
+  },
+
+  importUsers: async (file: File): Promise<ImportResult> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const { data } = await api.post<ImportResult>("/users/import", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
     return data;
   },
 
