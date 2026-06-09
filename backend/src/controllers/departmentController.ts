@@ -58,14 +58,18 @@ export const listDepartments = async (_req: Request, res: Response) => {
       return res.status(200).json(departments);
     }
 
-    if (
-      reqUser.global_role === "Superadmin" ||
-      reqUser.global_role === "Admin"
-    ) {
+    // Superadmin always sees all departments.
+    // Admin sees all departments ONLY when they are not assigned as a
+    // department Head — a Head (regardless of global_role) is scoped to
+    // their own department to prevent editing other departments.
+    const isHead = reqUser.department_role === "Head";
+
+    if (reqUser.global_role === "Superadmin" || (reqUser.global_role === "Admin" && !isHead)) {
       const departments = await getAllDepartments();
       return res.status(200).json(departments);
     }
 
+    // Head users (any global_role) and all Standard_Users: only their department.
     const departmentIds = reqUser.department_id
       ? [String(reqUser.department_id)]
       : [];
@@ -211,6 +215,15 @@ export const updateDepartmentHandler = async (req: Request, res: Response) => {
     };
 
     const departmentId = getDepartmentIdParam(req);
+
+    // A department Head (regardless of global_role) may only edit their own department.
+    const isHead = req.user?.department_role === "Head";
+    if (isHead && String(req.user?.department_id) !== departmentId) {
+      return res
+        .status(403)
+        .json({ message: "Insufficient permissions to update this department." });
+    }
+
     const previous = await getDepartmentById(departmentId);
     const updated = await updateDepartment(departmentId, {
       department_name,
@@ -258,6 +271,16 @@ export const updateDepartmentHandler = async (req: Request, res: Response) => {
 export const deleteDepartmentHandler = async (req: Request, res: Response) => {
   try {
     const departmentId = getDepartmentIdParam(req);
+
+    // A department Head (regardless of global_role) may not delete any department.
+    // Only Superadmin / non-Head Admin may delete.
+    const isHead = req.user?.department_role === "Head";
+    if (isHead) {
+      return res
+        .status(403)
+        .json({ message: "Insufficient permissions to delete a department." });
+    }
+
     const previous = await getDepartmentById(departmentId);
     await deleteDepartment(departmentId);
     await logActivityForRequest(req, {
