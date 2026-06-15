@@ -3,6 +3,11 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { requireAnyRole } from "../middlewares/rbac.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
+import {
+  createLeaveSchema,
+  reviewLeaveSchema,
+} from "../schemas/leaveSchemas.js";
 import {
   createLeaveHandler,
   getMyLeavesHandler,
@@ -19,7 +24,7 @@ router.use(authMiddleware);
 // ── applicant routes ───────────────────────────────────────────────────────────
 
 // POST   /leave          → file a new leave request (any authenticated user)
-router.post("/", createLeaveHandler);
+router.post("/", validateRequest({ body: createLeaveSchema }), createLeaveHandler);
 
 // GET    /leave/me       → get own leave history
 router.get("/me", getMyLeavesHandler);
@@ -42,6 +47,7 @@ router.get(
 router.patch(
   "/:leaveId/approve",
   requireAnyRole(["Admin", "Superadmin"], ["Head"]),
+  validateRequest({ body: reviewLeaveSchema }),
   reviewLeaveHandler,
 );
 

@@ -1,29 +1,16 @@
 // backend/src/controllers/leaveController.ts
 
 import type { Request, Response } from "express";
-import { z } from "zod";
+import {
+  type CreateLeavePayload,
+  type ReviewLeavePayload,
+} from "../schemas/leaveSchemas.js";
 import * as leaveService from "../services/leaveService.js";
 import {
   compactActivityChanges,
   logActivityForRequest,
   optionalActivityText,
 } from "../utils/activityLogPayload.js";
-
-// ─── validation schemas ───────────────────────────────────────────────────────
-
-const createLeaveSchema = z.object({
-  leaveType: z
-    .enum(["vacation", "sick", "emergency", "unpaid", "other"])
-    .optional()
-    .default("other"),
-  startDate: z.string().min(1, "startDate is required"),
-  endDate: z.string().min(1, "endDate is required"),
-  reason: z.string().min(3, "Reason must be at least 3 characters").max(500),
-});
-
-const reviewLeaveSchema = z.object({
-  rejectionReason: z.string().trim().max(500).optional(),
-});
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,21 +40,15 @@ export const createLeaveHandler = async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
 
-    const parsed = createLeaveSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        success: false,
-        message: "Validation error.",
-        issues: parsed.error.issues,
-      });
-    }
+    // req.body is guaranteed to be a valid CreateLeavePayload by validateRequest middleware
+    const payload = req.body as CreateLeavePayload;
 
     const leave = await leaveService.createLeave({
       userId,
-      leaveType: parsed.data.leaveType,
-      startDate: parsed.data.startDate,
-      endDate: parsed.data.endDate,
-      reason: parsed.data.reason,
+      leaveType: payload.leaveType,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+      reason: payload.reason,
     });
 
     return res.status(201).json({
@@ -143,27 +124,16 @@ export const reviewLeaveHandler = async (req: Request, res: Response) => {
     const actorId = getUserId(req);
     const leaveId = getRouteParam(req.params.leaveId, "leaveId");
 
-    // status comes from the body (existing frontend contract)
-    const statusSchema = z.object({
-      status: z.enum(["approved", "rejected"]),
-      rejectionReason: z.string().trim().max(500).optional(),
-    });
-
-    const parsed = statusSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        success: false,
-        message: "Validation error.",
-        issues: parsed.error.issues,
-      });
-    }
+    // req.body is guaranteed to be a valid ReviewLeavePayload by validateRequest middleware
+    const payload = req.body as ReviewLeavePayload;
 
     let leave;
 
-    if (parsed.data.status === "approved") {
+    if (payload.status === "approved") {
       leave = await leaveService.approveLeave({ leaveId, actorId });
     } else {
-      if (!parsed.data.rejectionReason) {
+      // Business rule: rejectionReason is required when rejecting
+      if (!payload.rejectionReason) {
         return res.status(400).json({
           success: false,
           message: "rejectionReason is required when rejecting a leave.",
@@ -172,7 +142,7 @@ export const reviewLeaveHandler = async (req: Request, res: Response) => {
       leave = await leaveService.rejectLeave({
         leaveId,
         actorId,
-        rejectionReason: parsed.data.rejectionReason,
+        rejectionReason: payload.rejectionReason,
       });
     }
 
@@ -180,24 +150,24 @@ export const reviewLeaveHandler = async (req: Request, res: Response) => {
       action_type: "update",
       resource_type: "dtr",
       resource_id: leaveId,
-      description: `Leave request ${parsed.data.status}.`,
+      description: `Leave request ${payload.status}.`,
       changes: compactActivityChanges({
         record_type: "leave",
         leave_id: leaveId,
         requesting_user_id: optionalActivityText(leave?.userId),
         approver_user_id: actorId,
         approver_email: optionalActivityText(req.user?.email),
-        outcome: parsed.data.status,
+        outcome: payload.status,
         rejection_reason:
-          parsed.data.status === "rejected"
-            ? parsed.data.rejectionReason
+          payload.status === "rejected"
+            ? payload.rejectionReason
             : undefined,
       }),
     });
 
     return res.status(200).json({
       success: true,
-      message: `Leave ${parsed.data.status} successfully.`,
+      message: `Leave ${payload.status} successfully.`,
       data: leave,
     });
   } catch (error) {

@@ -6,6 +6,8 @@ import {
   login,
   completeSetup,
 } from "../controllers/authController.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
+import { loginSchema } from "../schemas/authSchemas.js";
 
 const router = express.Router();
 
@@ -36,7 +38,7 @@ const completeSetupLimiter = rateLimit({
 });
 
 router.post("/check-email", checkEmailLimiter, checkEmail);
-router.post("/login", loginLimiter, login);
+router.post("/login", loginLimiter, validateRequest({ body: loginSchema }), login);
 router.post("/complete-setup", completeSetupLimiter, completeSetup);
 
 export default router;
