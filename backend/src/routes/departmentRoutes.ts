@@ -9,6 +9,11 @@ import {
 } from "../controllers/departmentController.js";
 import authenticateJWT from "../middlewares/auth.js";
 import { requireGlobalRole } from "../middlewares/rbac.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
+import {
+  createDepartmentSchema,
+  updateDepartmentSchema,
+} from "../schemas/departmentSchemas.js";
 
 const router = Router();
 
@@ -23,12 +28,14 @@ router.post(
   "/",
   authenticateJWT,
   requireGlobalRole("Superadmin", "Admin"),
+  validateRequest({ body: createDepartmentSchema }),
   createDepartmentHandler,
 );
 router.patch(
   "/:departmentId",
   authenticateJWT,
   requireGlobalRole("Superadmin", "Admin"),
+  validateRequest({ body: updateDepartmentSchema }),
   updateDepartmentHandler,
 );
 router.delete(

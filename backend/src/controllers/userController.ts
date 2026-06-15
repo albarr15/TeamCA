@@ -1,4 +1,9 @@
 import { Request, Response } from "express";
+import {
+  type CreateWhitelistPayload,
+  type ActivateWhitelistPayload,
+  type CreateUserPayload,
+} from "../schemas/userSchemas.js";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import {
@@ -239,6 +244,7 @@ export const getUserById = async (req: Request, res: Response) => {
  */
 export const createUser = async (req: Request, res: Response) => {
   try {
+    // req.body is guaranteed to be a valid CreateUserPayload by validateRequest middleware
     const {
       first_name,
       last_name,
@@ -251,17 +257,11 @@ export const createUser = async (req: Request, res: Response) => {
       is_active,
       working_hours,
       working_days,
-    } = req.body;
-
-    if (!first_name || !last_name || !email || !password_hash || !global_role) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
+      batch_ids: payloadBatchIds,
+    } = req.body as CreateUserPayload;
 
     const normalizedDepartments = Array.isArray(departments)
-      ? departments.filter(
-          (d: { department_id?: string; department_role?: string }) =>
-            d && d.department_id && d.department_role,
-        )
+      ? departments.filter((d) => d && d.department_id && d.department_role)
       : department_id && department_role
         ? [{ department_id, department_role }]
         : [];
@@ -278,9 +278,7 @@ export const createUser = async (req: Request, res: Response) => {
       departments: normalizedDepartments,
     });
 
-    const batchIds: string[] = Array.isArray(req.body?.batch_ids)
-      ? req.body.batch_ids.filter((id: unknown) => typeof id === "string" && id.trim().length > 0)
-      : [];
+    const batchIds = (payloadBatchIds ?? []).filter((id) => id.trim().length > 0);
     if (batchIds.length > 0) {
       try {
         await assignUserToBatches(getUserActivityId(newUser, "new-user"), batchIds);
@@ -317,30 +315,15 @@ export const createWhitelistedUserHandler = async (
   res: Response,
 ) => {
   try {
-    const email = String(req.body?.email ?? "")
-      .trim()
-      .toLowerCase();
-    const department_id = req.body?.department_id
-      ? String(req.body.department_id)
-      : undefined;
-    const global_role = req.body?.global_role || "Standard_User";
-    const department_role = req.body?.department_role || "Intern";
-
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
-    }
+    // req.body is guaranteed to be a valid CreateWhitelistPayload by validateRequest middleware
+    const { email, global_role, department_role, department_id } =
+      req.body as CreateWhitelistPayload;
 
     const newUser = await createWhitelistedUser({
       email,
-      global_role: global_role as "Superadmin" | "Admin" | "Standard_User",
+      global_role,
       department_id,
-      department_role: department_role as "Head" | "Supervisor" | "Intern",
+      department_role,
     });
 
     const targetUserId = getUserActivityId(newUser, "new-whitelisted-user");
@@ -377,59 +360,32 @@ export const activateWhitelistedUserHandler = async (
   try {
     const userId = getUserIdParam(req);
 
-    const first_name = String(req.body?.first_name ?? "").trim();
-    const last_name = String(req.body?.last_name ?? "").trim();
-    const password = String(req.body?.password ?? "");
-    const suppliedPasswordHash = String(req.body?.password_hash ?? "");
+    // req.body is guaranteed to be a valid ActivateWhitelistPayload by validateRequest middleware
+    const {
+      first_name,
+      last_name,
+      password,
+      password_hash: suppliedPasswordHash,
+      global_role,
+      department_id,
+      department_role,
+      batch_ids: payloadBatchIds,
+    } = req.body as ActivateWhitelistPayload;
 
-    const global_role = req.body?.global_role || "Standard_User";
-    const department_id = req.body?.department_id
-      ? String(req.body.department_id)
-      : undefined;
-
-    const department_role = req.body?.department_role || "Intern";
-
-    if (!first_name || !last_name || (!password && !suppliedPasswordHash)) {
-      return res.status(400).json({
-        message: "First name, last name, and password are required",
-      });
-    }
-
-    // Validate name length
-    if (first_name.length < 2 || last_name.length < 2) {
-      return res.status(400).json({
-        message: "Names must be at least 2 characters",
-      });
-    }
-
-    if (password && password.length < 8) {
-      return res.status(400).json({
-        message: "Password must be at least 8 characters long",
-      });
-    }
-
-    // Validate password hash format if a pre-hashed password is supplied.
-    if (suppliedPasswordHash && !suppliedPasswordHash.startsWith("$2")) {
-      return res.status(400).json({
-        message: "Invalid password format",
-      });
-    }
-
+    // Schema refine ensures at least one of password / password_hash is present
     const password_hash =
-      suppliedPasswordHash || (await bcrypt.hash(password, 12));
+      suppliedPasswordHash || (await bcrypt.hash(password!, 12));
 
     const user = await activateWhitelistedUser(userId, {
       first_name,
       last_name,
       password_hash,
-      global_role: global_role as "Superadmin" | "Admin" | "Standard_User",
+      global_role,
       department_id,
-      department_role: department_role as "Head" | "Supervisor" | "Intern",
+      department_role,
     });
 
-    const batchIds: string[] = Array.isArray(req.body?.batch_ids)
-      ? req.body.batch_ids.filter((id: unknown) => typeof id === "string" && id.trim().length > 0)
-      : [];
+    const batchIds = (payloadBatchIds ?? []).filter((id) => id.trim().length > 0);
     if (batchIds.length > 0 && department_role === "Intern") {
       try {
         await assignUserToBatches(getUserActivityId(user, userId), batchIds);

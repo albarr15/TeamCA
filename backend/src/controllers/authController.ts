@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { type LoginPayload } from "../schemas/authSchemas.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -40,16 +41,9 @@ export const checkEmail = async (req: Request, res: Response) => {
 };
 
 export const login = async (req: Request, res: Response) => {
+  // req.body is guaranteed to be a valid LoginPayload by validateRequest middleware
+  const { email, password } = req.body as LoginPayload;
   try {
-    const email = String(req.body?.email ?? "")
-      .trim()
-      .toLowerCase();
-    const password = String(req.body?.password ?? "");
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
-    }
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -92,10 +86,7 @@ export const login = async (req: Request, res: Response) => {
 
     res.json({ token, user: userData });
   } catch {
-    // log failed login
-    const email = String(req.body?.email ?? "")
-      .trim()
-      .toLowerCase();
+    // log failed login — email is in scope from the destructure above
     if (email) {
       await logActivity({
         user_id: "anonymous",

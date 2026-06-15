@@ -1,5 +1,9 @@
 import type { Request, Response } from "express";
 import {
+  type CreateDepartmentPayload,
+  type UpdateDepartmentPayload,
+} from "../schemas/departmentSchemas.js";
+import {
   createDepartment,
   deleteDepartment,
   getAllDepartments,
@@ -157,15 +161,9 @@ export const listDepartmentMembersHandler = async (req: Request, res: Response) 
 
 export const createDepartmentHandler = async (req: Request, res: Response) => {
   try {
-    const { department_name, description, department_head } = req.body as {
-      department_name?: string;
-      description?: string;
-      department_head?: string;
-    };
-
-    if (!department_name) {
-      return res.status(400).json({ message: "department_name is required." });
-    }
+    // req.body is guaranteed to be a valid CreateDepartmentPayload by validateRequest middleware
+    const { department_name, description, department_head } =
+      req.body as CreateDepartmentPayload;
 
     const created = await createDepartment(
       department_name,
@@ -208,11 +206,9 @@ export const createDepartmentHandler = async (req: Request, res: Response) => {
 
 export const updateDepartmentHandler = async (req: Request, res: Response) => {
   try {
-    const { department_name, description, department_head } = req.body as {
-      department_name?: string;
-      description?: string;
-      department_head?: string | null;
-    };
+    // req.body is guaranteed to be a valid UpdateDepartmentPayload by validateRequest middleware
+    const { department_name, description, department_head } =
+      req.body as UpdateDepartmentPayload;
 
     const departmentId = getDepartmentIdParam(req);
 

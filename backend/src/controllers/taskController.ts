@@ -1,5 +1,16 @@
 import type { Request, Response } from "express";
-import { z } from "zod";
+import {
+  type CreateTaskPayload,
+  type AssignTaskPayload,
+  type UpdateTaskStatusPayload,
+  type UpdateTaskDetailsPayload,
+  type DeleteTasksPayload,
+  type AddTaskFeedbackPayload,
+  type AddTaskCommentPayload,
+  type AddTaskWorkLinkPayload,
+  type ReviewTaskWorkLinkPayload,
+  type ListTasksQuery,
+} from "../schemas/taskSchemas.js";
 import Notification from "../models/Notification.js";
 import {
   addTaskComment,
@@ -40,151 +51,6 @@ import {
   safeActivityText,
 } from "../utils/activityLogPayload.js";
 
-const createTaskSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(3, "Title must be at least 3 characters.")
-    .max(120, "Title must be 120 characters or fewer."),
-  description: z
-    .string()
-    .trim()
-    .max(1000, "Description must be 1000 characters or fewer.")
-    .optional(),
-  priority: z.enum(["Low", "Medium", "High"]).optional(),
-  deadline: z.coerce
-    .date()
-    .optional()
-    .refine((value) => {
-      if (!value) {
-        return true;
-      }
-
-      const today = new Date();
-      const startOfToday = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-      ).getTime();
-      const startOfDeadline = new Date(
-        value.getFullYear(),
-        value.getMonth(),
-        value.getDate(),
-      ).getTime();
-      return startOfDeadline >= startOfToday;
-    }, "deadline cannot be in the past."),
-  assigned_to: z
-    .union([z.string().trim().min(1), z.array(z.string().trim().min(1)).min(1)])
-    .optional(),
-});
-
-const assignTaskSchema = z.object({
-  assigned_to: z.union([
-    z.string().trim().min(1),
-    z.array(z.string().trim().min(1)).min(1),
-  ]),
-});
-
-const updateTaskStatusSchema = z.object({
-  status: z.enum(["Not Started", "In Progress", "Under Review", "Completed"]),
-  update_notes: z
-    .string()
-    .trim()
-    .max(500, "update_notes must be 500 characters or fewer.")
-    .optional(),
-});
-
-const addTaskFeedbackSchema = z.object({
-  comments: z
-    .string()
-    .trim()
-    .min(3, "comments must be at least 3 characters.")
-    .max(2000, "comments must be 2000 characters or fewer."),
-});
-
-const addTaskCommentSchema = z.object({
-  message: z
-    .string()
-    .trim()
-    .min(1, "message is required.")
-    .max(2000, "message must be 2000 characters or fewer."),
-});
-
-const updateTaskDetailsSchema = z
-  .object({
-    title: z
-      .string()
-      .trim()
-      .min(1, "Title is required.")
-      .max(120, "Title must be 120 characters or fewer.")
-      .optional(),
-    description: z
-      .string()
-      .trim()
-      .max(1000, "Description must be 1000 characters or fewer.")
-      .optional(),
-    deadline: z.union([z.coerce.date(), z.null()]).optional(),
-  })
-  .refine(
-    (value) =>
-      value.title !== undefined ||
-      value.description !== undefined ||
-      value.deadline !== undefined,
-    { message: "At least one field must be provided." },
-  );
-
-const deleteTasksSchema = z.object({
-  task_ids: z
-    .array(z.string().trim().min(1))
-    .min(1, "Select at least one task."),
-});
-
-const addTaskWorkLinkSchema = z.object({
-  url: z.string().trim().url("url must be a valid URL."),
-  label: z
-    .string()
-    .trim()
-    .max(120, "label must be 120 characters or fewer.")
-    .optional(),
-});
-
-const reviewTaskWorkLinkSchema = z
-  .object({
-    status: z.enum(["approved", "rejected"]),
-    review_notes: z
-      .string()
-      .trim()
-      .max(1000, "review_notes must be 1000 characters or fewer.")
-      .optional(),
-  })
-  .refine(
-    (val) =>
-      val.status !== "rejected" || (val.review_notes?.trim().length ?? 0) > 0,
-    { message: "review_notes is required when rejecting a deliverable." },
-  );
-
-const listTasksQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(10),
-  status: z
-    .enum(["Not Started", "In Progress", "Under Review", "Completed"])
-    .optional(),
-  priority: z.enum(["Low", "Medium", "High"]).optional(),
-  search: z.string().trim().max(200).optional(),
-  created_date: z.enum(["all", "today", "7d", "30d"]).default("all"),
-  sort_by: z
-    .enum([
-      "created_desc",
-      "created_asc",
-      "priority_desc",
-      "priority_asc",
-      "deadline_asc",
-      "deadline_desc",
-      "title_asc",
-    ])
-    .default("created_desc"),
-  batch_id: z.string().trim().min(1).optional(),
-});
 
 const parseTaskId = (req: Request, res: Response): string | null => {
   const rawTaskId = req.params.taskId;
@@ -320,7 +186,8 @@ export const createTaskHandler = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Authentication required." });
     }
 
-    const payload = createTaskSchema.parse(req.body);
+    // req.body is guaranteed to be a valid CreateTaskPayload by validateRequest middleware
+    const payload = req.body as CreateTaskPayload;
     const normalizedAssignees = Array.isArray(payload.assigned_to)
       ? payload.assigned_to
       : payload.assigned_to
@@ -376,12 +243,6 @@ export const createTaskHandler = async (req: Request, res: Response) => {
 
     return res.status(201).json(created);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (
         error.message.includes("Department managers") ||
@@ -422,7 +283,8 @@ export const assignTaskHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const payload = assignTaskSchema.parse(req.body);
+    // req.body is guaranteed to be a valid AssignTaskPayload by validateRequest middleware
+    const payload = req.body as AssignTaskPayload;
     const assignees = Array.isArray(payload.assigned_to)
       ? payload.assigned_to
       : [payload.assigned_to];
@@ -549,12 +411,6 @@ export const assignTaskHandler = async (req: Request, res: Response) => {
 
     return res.status(200).json(assignment);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
@@ -594,9 +450,10 @@ export const listTasksHandler = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Authentication required." });
     }
 
-    const query = listTasksQuerySchema.parse(req.query);
+    // req.query is guaranteed to be a valid ListTasksQuery by validateRequest middleware
+    const query = req.query as unknown as ListTasksQuery;
 
-    if (req.query.paginate === "false") {
+    if (query.paginate === "false") {
       const tasks = await listAccessibleTasks(req.user);
       for (const task of tasks) {
         await emitDeadlineNotificationsForTask(task);
@@ -625,12 +482,6 @@ export const listTasksHandler = async (req: Request, res: Response) => {
 
     return res.status(200).json(payload);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid query params.", issues: error.issues });
-    }
-
     return res.status(500).json({ message: "Failed to list tasks." });
   }
 };
@@ -674,7 +525,8 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const payload = updateTaskStatusSchema.parse(req.body);
+    // req.body is guaranteed to be a valid UpdateTaskStatusPayload by validateRequest middleware
+    const payload = req.body as UpdateTaskStatusPayload;
 
     // Layer 1 guard: fetch current status before the update to short-circuit
     // duplicate calls that arrive before the DB write is visible. This prevents
@@ -885,12 +737,6 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
 
     return res.status(200).json(updated);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
@@ -926,7 +772,8 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const payload = updateTaskDetailsSchema.parse(req.body);
+    // req.body is guaranteed to be a valid UpdateTaskDetailsPayload by validateRequest middleware
+    const payload = req.body as UpdateTaskDetailsPayload;
     if (payload.deadline && payload.deadline.getTime() < Date.now()) {
       return res
         .status(400)
@@ -1008,12 +855,6 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
 
     return res.status(200).json(updatedTask);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
@@ -1038,7 +879,8 @@ export const deleteTasksHandler = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Authentication required." });
     }
 
-    const payload = deleteTasksSchema.parse(req.body);
+    // req.body is guaranteed to be a valid DeleteTasksPayload by validateRequest middleware
+    const payload = req.body as DeleteTasksPayload;
     const contexts = await getTaskDeleteContexts(payload.task_ids);
 
     const result = await deleteTasks(req.user, {
@@ -1079,12 +921,6 @@ export const deleteTasksHandler = async (req: Request, res: Response) => {
 
     return res.status(200).json(result);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
@@ -1110,7 +946,8 @@ export const addTaskFeedbackHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const payload = addTaskFeedbackSchema.parse(req.body);
+    // req.body is guaranteed to be a valid AddTaskFeedbackPayload by validateRequest middleware
+    const payload = req.body as AddTaskFeedbackPayload;
     const feedback = await addTaskFeedback(req.user, {
       taskId,
       comments: payload.comments,
@@ -1151,12 +988,6 @@ export const addTaskFeedbackHandler = async (req: Request, res: Response) => {
 
     return res.status(201).json(feedback);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
@@ -1246,7 +1077,8 @@ export const addTaskWorkLinkHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const payload = addTaskWorkLinkSchema.parse(req.body);
+    // req.body is guaranteed to be a valid AddTaskWorkLinkPayload by validateRequest middleware
+    const payload = req.body as AddTaskWorkLinkPayload;
     const workLink = await addTaskWorkLink(req.user, {
       taskId,
       url: payload.url,
@@ -1255,12 +1087,6 @@ export const addTaskWorkLinkHandler = async (req: Request, res: Response) => {
 
     return res.status(201).json(workLink);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
@@ -1329,7 +1155,8 @@ export const reviewTaskWorkLinkHandler = async (
       return res.status(400).json({ message: "workLinkId is required." });
     }
 
-    const payload = reviewTaskWorkLinkSchema.parse(req.body);
+    // req.body is guaranteed to be a valid ReviewTaskWorkLinkPayload by validateRequest middleware
+    const payload = req.body as ReviewTaskWorkLinkPayload;
     const reviewed = await reviewTaskWorkLink(req.user, {
       taskId,
       workLinkId,
@@ -1377,12 +1204,6 @@ export const reviewTaskWorkLinkHandler = async (
 
     return res.status(200).json(reviewed);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (
         error.message === "Task not found." ||
@@ -1502,7 +1323,8 @@ export const addTaskCommentHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const payload = addTaskCommentSchema.parse(req.body);
+    // req.body is guaranteed to be a valid AddTaskCommentPayload by validateRequest middleware
+    const payload = req.body as AddTaskCommentPayload;
     const comment = await addTaskComment(req.user, {
       taskId,
       message: payload.message,
@@ -1545,12 +1367,6 @@ export const addTaskCommentHandler = async (req: Request, res: Response) => {
 
     return res.status(201).json(comment);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request body.", issues: error.issues });
-    }
-
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });

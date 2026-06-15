@@ -14,6 +14,12 @@ import { importUsersFromCsv } from "../controllers/importController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { uploadCsv } from "../middlewares/uploadMiddleware.js";
 import { requireAnyRole, requireGlobalRole } from "../middlewares/rbac.js";
+import { validateRequest } from "../middlewares/validateRequest.js";
+import {
+  createWhitelistSchema,
+  activateWhitelistSchema,
+  createUserSchema,
+} from "../schemas/userSchemas.js";
 
 const router = express.Router();
 
@@ -28,6 +34,7 @@ router.post(
   "/whitelist",
   authMiddleware,
   requireGlobalRole("Superadmin"),
+  validateRequest({ body: createWhitelistSchema }),
   createWhitelistedUserHandler,
 );
 
@@ -57,13 +64,14 @@ router.post(
   "/:userId/activate-whitelist",
   authMiddleware,
   requireGlobalRole("Superadmin"),
+  validateRequest({ body: activateWhitelistSchema }),
   activateWhitelistedUserHandler,
 );
 
 router.get("/:userId", authMiddleware, getUserById);
 router.put("/:userId", authMiddleware, updateUser);
 
-router.post("/", authMiddleware, requireGlobalRole("Superadmin"), createUser);
+router.post("/", authMiddleware, requireGlobalRole("Superadmin"), validateRequest({ body: createUserSchema }), createUser);
 
 router.delete(
   "/:userId",
