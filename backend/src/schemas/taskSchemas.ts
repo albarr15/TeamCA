@@ -214,3 +214,17 @@ export const listTasksQuerySchema = z.object({
 });
 
 export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
+
+// ---------------------------------------------------------------------------
+// Task Analytics Query  (GET /tasks/analytics)
+// ---------------------------------------------------------------------------
+
+export const taskAnalyticsQuerySchema = z.object({
+  startDate: z.coerce.date().optional(),
+  endDate:   z.coerce.date().optional(),
+  status: z
+    .enum(["Not Started", "In Progress", "Under Review", "Completed"])
+    .optional(),
+});
+
+export type TaskAnalyticsQuery = z.infer<typeof taskAnalyticsQuerySchema>;
