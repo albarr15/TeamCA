@@ -2,6 +2,7 @@ import { Router } from "express";
 import authenticateJWT from "../middlewares/auth.js";
 import { requestLock } from "../middlewares/requestLock.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
+import { requireGlobalRole } from "../middlewares/rbac.js";
 import {
   addTaskCommentHandler,
   addTaskWorkLinkHandler,
@@ -10,6 +11,7 @@ import {
   createTaskHandler,
   deleteTasksHandler,
   deleteTaskWorkLinkHandler,
+  getTaskAnalyticsHandler,
   getTaskDetailHandler,
   listTaskCommentsHandler,
   listTaskFeedbackHandler,
@@ -29,6 +31,7 @@ import {
   deleteTasksSchema,
   listTasksQuerySchema,
   reviewTaskWorkLinkSchema,
+  taskAnalyticsQuerySchema,
   updateTaskDetailsSchema,
   updateTaskStatusSchema,
 } from "../schemas/taskSchemas.js";
@@ -39,6 +42,14 @@ router.use(authenticateJWT);
 router.get("/", validateRequest({ query: listTasksQuerySchema }), listTasksHandler);
 router.post("/", validateRequest({ body: createTaskSchema }), createTaskHandler);
 router.delete("/", validateRequest({ body: deleteTasksSchema }), deleteTasksHandler);
+// /analytics must be declared before /:taskId so Express does not capture
+// the literal string "analytics" as a :taskId parameter.
+router.get(
+  "/analytics",
+  requireGlobalRole("Superadmin", "Admin"),
+  validateRequest({ query: taskAnalyticsQuerySchema }),
+  getTaskAnalyticsHandler,
+);
 router.get("/:taskId", getTaskDetailHandler);
 router.post("/:taskId/assign", validateRequest({ body: assignTaskSchema }), assignTaskHandler);
 router.patch("/:taskId",        requestLock, validateRequest({ body: updateTaskDetailsSchema }), updateTaskDetailsHandler);

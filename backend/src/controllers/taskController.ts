@@ -10,6 +10,7 @@ import {
   type AddTaskWorkLinkPayload,
   type ReviewTaskWorkLinkPayload,
   type ListTasksQuery,
+  type TaskAnalyticsQuery,
 } from "../schemas/taskSchemas.js";
 import Notification from "../models/Notification.js";
 import {
@@ -1381,6 +1382,169 @@ export const addTaskCommentHandler = async (req: Request, res: Response) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// GET /tasks/analytics  (admin-only)
+// ---------------------------------------------------------------------------
+
+export const getTaskAnalyticsHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required." });
+    }
+
+    // req.query is guaranteed to be a valid TaskAnalyticsQuery by validateRequest middleware
+    const query = req.query as unknown as TaskAnalyticsQuery;
+    const now = new Date();
+
+    // Build a $match filter scoped to the deadline field.
+    // The status filter (if provided) is also applied here so both pipelines
+    // use the exact same base match without duplication.
+    const baseMatch: Record<string, unknown> = {};
+
+    if (query.startDate || query.endDate) {
+      const deadlineRange: Record<string, Date> = {};
+      if (query.startDate) deadlineRange.$gte = query.startDate;
+      if (query.endDate)   deadlineRange.$lte = query.endDate;
+      baseMatch.deadline = deadlineRange;
+    }
+
+    if (query.status) {
+      baseMatch.status = query.status;
+    }
+
+    // -----------------------------------------------------------------------
+    // Pipeline A — Completion Metrics
+    // A single $facet pass so MongoDB reads the collection once and branches
+    // into parallel $count sub-pipelines — no N+1 countDocuments calls.
+    //
+    // Overdue: deadline < now AND status is not "Completed" or "Under Review".
+    // Tasks in "Under Review" are excluded because the assignee has already
+    // done their part; the delay is on the reviewer side.
+    // -----------------------------------------------------------------------
+    const [metrics] = await Task.aggregate([
+      { $match: baseMatch },
+      {
+        $facet: {
+          total:       [{ $count: "count" }],
+          completed:   [{ $match: { status: "Completed"    } }, { $count: "count" }],
+          pending:     [{ $match: { status: "Not Started"  } }, { $count: "count" }],
+          inProgress:  [{ $match: { status: "In Progress"  } }, { $count: "count" }],
+          underReview: [{ $match: { status: "Under Review" } }, { $count: "count" }],
+          overdue: [
+            {
+              $match: {
+                deadline: { $lt: now },
+                status: { $nin: ["Completed", "Under Review"] },
+              },
+            },
+            { $count: "count" },
+          ],
+        },
+      },
+    ]);
+
+    // -----------------------------------------------------------------------
+    // Pipeline B — Assignee Performance
+    // Start from TaskAssignment and $lookup tasks with a sub-pipeline so the
+    // date-range / status filter is pushed into the join — only matching tasks
+    // are materialised, keeping memory usage proportional to the result set.
+    // A second $lookup hydrates user names in the same aggregation pass.
+    // -----------------------------------------------------------------------
+    const assigneePerformance = await TaskAssignment.aggregate([
+      {
+        $lookup: {
+          from: "tasks",
+          let:  { taskId: "$task_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$taskId"] },
+                ...baseMatch,
+              },
+            },
+            { $project: { status: 1, deadline: 1 } },
+          ],
+          as: "task",
+        },
+      },
+      // Drop assignment rows whose joined task didn't pass the filter
+      { $unwind: "$task" },
+      {
+        $group: {
+          _id:           "$assigned_to",
+          totalAssigned: { $sum: 1 },
+          completed: {
+            $sum: {
+              $cond: [{ $eq: ["$task.status", "Completed"] }, 1, 0],
+            },
+          },
+          overdue: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $gt: [{ $ifNull: ["$task.deadline", null] }, null] },
+                    { $lt: ["$task.deadline", now] },
+                    { $not: [{ $in: ["$task.status", ["Completed", "Under Review"]] }] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from:         "users",
+          localField:   "_id",
+          foreignField: "_id",
+          as:           "user",
+        },
+      },
+      // preserveNullAndEmpty keeps orphaned assignments (e.g. deleted users)
+      // so their counts aren't silently dropped from the totals.
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id:           0,
+          userId:        { $toString: "$_id" },
+          name: {
+            $trim: {
+              input: {
+                $concat: [
+                  { $ifNull: ["$user.first_name", ""] },
+                  " ",
+                  { $ifNull: ["$user.last_name",  ""] },
+                ],
+              },
+            },
+          },
+          totalAssigned: 1,
+          completed:     1,
+          overdue:       1,
+        },
+      },
+      { $sort: { totalAssigned: -1 } },
+    ]);
+
+    return res.status(200).json({
+      completionMetrics: {
+        total:       metrics?.total[0]?.count       ?? 0,
+        completed:   metrics?.completed[0]?.count   ?? 0,
+        pending:     metrics?.pending[0]?.count     ?? 0,
+        inProgress:  metrics?.inProgress[0]?.count  ?? 0,
+        underReview: metrics?.underReview[0]?.count ?? 0,
+        overdue:     metrics?.overdue[0]?.count     ?? 0,
+      },
+      assigneePerformance,
+    });
+  } catch (_error) {
+    return res.status(500).json({ message: "Failed to fetch task analytics." });
+  }
+};
+
 export default {
   createTaskHandler,
   assignTaskHandler,
@@ -1398,4 +1562,5 @@ export default {
   reviewTaskWorkLinkHandler,
   listTaskCommentsHandler,
   addTaskCommentHandler,
+  getTaskAnalyticsHandler,
 };

@@ -9,6 +9,8 @@ import type {
   PaginatedTaskListResponse,
   ReviewTaskWorkLinkPayload,
   Task,
+  TaskAnalyticsParams,
+  TaskAnalyticsResponse,
   TaskAssignment,
   TaskComment,
   TaskDetail,
@@ -180,6 +182,20 @@ export const taskService = {
       },
     });
 
+    return response.data;
+  },
+
+  getTaskAnalytics: async (
+    params?: TaskAnalyticsParams,
+  ): Promise<TaskAnalyticsResponse> => {
+    const response = await api.get<TaskAnalyticsResponse>("/tasks/analytics", {
+      headers: {},
+      params: {
+        startDate: params?.startDate,
+        endDate:   params?.endDate,
+        status:    params?.status,
+      },
+    });
     return response.data;
   },
 };

@@ -191,3 +191,38 @@ export interface TaskListQuery {
     | "title_asc";
   batch_id?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Task Analytics  (GET /tasks/analytics)
+// ---------------------------------------------------------------------------
+
+export interface CompletionMetrics {
+  total:       number;
+  completed:   number;
+  /** Count of "Not Started" tasks. */
+  pending:     number;
+  inProgress:  number;
+  underReview: number;
+  /** deadline < now, excludes "Completed" and "Under Review" statuses. */
+  overdue:     number;
+}
+
+export interface AssigneePerformance {
+  userId:        string;
+  name:          string;
+  totalAssigned: number;
+  completed:     number;
+  overdue:       number;
+}
+
+export interface TaskAnalyticsResponse {
+  completionMetrics:   CompletionMetrics;
+  assigneePerformance: AssigneePerformance[];
+}
+
+/** Query parameters accepted by GET /tasks/analytics. Dates as ISO-8601 strings. */
+export interface TaskAnalyticsParams {
+  startDate?: string;
+  endDate?:   string;
+  status?:    TaskStatus;
+}
