@@ -1,6 +1,7 @@
 import TimeAdjustmentRequest from "../models/TimeAdjustmentRequest.js";
 import DTR from "../models/DTR.js";
 import { emitUserDTRUpdated } from "../socket/io.js";
+import { updateDTRTotals } from "./dtrService.js";
 
 export const timeAdjustmentService = {
   async submitRequest(
@@ -94,6 +95,34 @@ export const timeAdjustmentService = {
 
     if (!request) {
       throw new Error("Request not found");
+    }
+
+    // Apply the approved value to the actual DTR record and recalculate totals
+    const dtr = await DTR.findById(request.dtrId);
+    if (dtr && dtr.clocks.length > 0) {
+      const lastClock = dtr.clocks[dtr.clocks.length - 1];
+      const adjustedDate = new Date(request.requestedValue);
+
+      if (request.adjustmentType === "time_in") {
+        lastClock.timeIn = adjustedDate;
+      } else if (request.adjustmentType === "time_out") {
+        lastClock.timeOut = adjustedDate;
+      } else if (request.adjustmentType === "manual_entry") {
+        // requestedValue is expected as "HH:MM-HH:MM" (timeIn-timeOut)
+        const [inStr, outStr] = request.requestedValue.split("-");
+        if (inStr && outStr) {
+          const base = new Date(dtr.date);
+          const [inH, inM] = inStr.split(":").map(Number);
+          const [outH, outM] = outStr.split(":").map(Number);
+          lastClock.timeIn = new Date(base.setHours(inH, inM, 0, 0));
+          const outBase = new Date(dtr.date);
+          lastClock.timeOut = new Date(outBase.setHours(outH, outM, 0, 0));
+        }
+      }
+
+      await dtr.save();
+      // Recalculate totals and sync intern rendered hours
+      await updateDTRTotals(dtr._id.toString());
     }
 
     // Emit notification to user
