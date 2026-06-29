@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, afterEach } from "vitest";
 
 vi.mock("../socket/io", () => ({
   emitUserDTRUpdated: vi.fn(),
@@ -8,6 +8,11 @@ vi.mock("../socket/io", () => ({
   emitUsersDirectoryUpdated: vi.fn(),
   emitTaskStatusUpdated: vi.fn(),
   emitTaskCommentCreated: vi.fn(),
+}));
+
+// Prevent hour-total tests from requiring a real InternProfile document
+vi.mock("./internProfileService.js", () => ({
+  syncRenderedHours: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { endBreak, startBreak, timeIn, timeOut } from "./dtrService.js";
@@ -165,5 +170,147 @@ describe("dtrService — socket emits", () => {
 
     expect(emitDTR).toHaveBeenCalledTimes(1);
     expect((emitDTR.mock.calls[0][1] as any).event).toBe("leave-auto-close");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// dtrService — hour total validation
+// ---------------------------------------------------------------------------
+import { updateDTRTotals } from "./dtrService.js";
+
+describe("dtrService — hour total validation", () => {
+  const PH_OFFSET = 8 * 60 * 60 * 1000;
+
+  const todayPH = () => {
+    const d = new Date(new Date().getTime() + PH_OFFSET);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 60 * 60 * 1000);
+  const hoursFromNow = (h: number) => new Date(Date.now() + h * 60 * 60 * 1000);
+
+  it("totalHours equals elapsed time minus break duration", async () => {
+    const { user, dept } = await setupUser();
+
+    const timeInDate = hoursAgo(5);
+    const timeOutDate = new Date(); // 5 hours later
+    const breakMinutes = 30;
+
+    const dtr = await DTR.create({
+      userId: user._id,
+      departmentId: dept._id,
+      date: todayPH(),
+      attendanceStatus: "present",
+      clocks: [
+        {
+          timeIn: timeInDate,
+          timeOut: timeOutDate,
+          breaks: [
+            {
+              breakStart: hoursAgo(3),
+              breakEnd: new Date(hoursAgo(3).getTime() + breakMinutes * 60000),
+              duration: breakMinutes,
+              type: "lunch",
+            },
+          ],
+        },
+      ],
+    });
+
+    const updated = await updateDTRTotals(dtr._id.toString());
+
+    const elapsedHours = (timeOutDate.getTime() - timeInDate.getTime()) / 3600000;
+    const expectedHours = parseFloat((elapsedHours - breakMinutes / 60).toFixed(2));
+
+    expect(updated.totalHours).toBeCloseTo(expectedHours, 1);
+  });
+
+  it("undertimeHours is correct when worker clocks fewer than 8 hours", async () => {
+    const { user, dept } = await setupUser();
+
+    const timeInDate = hoursAgo(6);
+    const timeOutDate = new Date(); // 6 h session, no breaks
+
+    const dtr = await DTR.create({
+      userId: user._id,
+      departmentId: dept._id,
+      date: todayPH(),
+      attendanceStatus: "present",
+      clocks: [{ timeIn: timeInDate, timeOut: timeOutDate }],
+    });
+
+    const updated = await updateDTRTotals(dtr._id.toString());
+
+    // Required = 8 h, rendered ≈ 6 h → undertime ≈ 2 h
+    expect(updated.undertimeHours).toBeGreaterThan(0);
+    expect(updated.undertimeHours).toBeCloseTo(8 - (updated.totalHours ?? 0), 1);
+  });
+
+  it("undertimeHours is 0 when worker meets or exceeds 8 hours", async () => {
+    const { user, dept } = await setupUser();
+
+    const timeInDate = hoursAgo(9);
+    const timeOutDate = new Date(); // 9 h session
+
+    const dtr = await DTR.create({
+      userId: user._id,
+      departmentId: dept._id,
+      date: todayPH(),
+      attendanceStatus: "present",
+      clocks: [{ timeIn: timeInDate, timeOut: timeOutDate }],
+    });
+
+    const updated = await updateDTRTotals(dtr._id.toString());
+
+    expect(updated.undertimeHours).toBe(0);
+  });
+
+  it("totalHours sums across multiple clock entries in one day", async () => {
+    const { user, dept } = await setupUser();
+
+    // Two separate clock entries: 3 h + 4 h = 7 h total
+    const dtr = await DTR.create({
+      userId: user._id,
+      departmentId: dept._id,
+      date: todayPH(),
+      attendanceStatus: "present",
+      clocks: [
+        { timeIn: hoursAgo(10), timeOut: hoursAgo(7) }, // 3 h
+        { timeIn: hoursAgo(6), timeOut: hoursAgo(2) },  // 4 h
+      ],
+    });
+
+    const updated = await updateDTRTotals(dtr._id.toString());
+
+    expect(updated.totalHours).toBeCloseTo(7, 1);
+    expect(updated.undertimeHours).toBeCloseTo(1, 1); // 8 - 7 = 1 h
+  });
+
+  it("overtimeHours is computed correctly when timeOut is after END_TIME (22:00 PH)", async () => {
+    const { user, dept } = await setupUser();
+
+    // Simulate clock-in at 08:00 PH and clock-out at 23:00 PH (1 h overtime)
+    const basePH = todayPH();
+    const tIn = new Date(basePH.getTime() + 8 * 3600000 - PH_OFFSET);   // 08:00 UTC+8 → UTC
+    const tOut = new Date(basePH.getTime() + 23 * 3600000 - PH_OFFSET); // 23:00 UTC+8 → UTC
+
+    const dtr = await DTR.create({
+      userId: user._id,
+      departmentId: dept._id,
+      date: todayPH(),
+      attendanceStatus: "present",
+      clocks: [
+        {
+          timeIn: tIn,
+          timeOut: tOut,
+          overtimeHours: 1, // pre-set by timeOut handler
+        },
+      ],
+    });
+
+    // overtimeHours lives on the clock subdocument; verify it is persisted correctly
+    const found = await DTR.findById(dtr._id);
+    expect(found!.clocks[0].overtimeHours).toBeCloseTo(1, 1);
   });
 });

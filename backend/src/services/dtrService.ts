@@ -5,6 +5,7 @@ import DTRSummary from "../models/DTRSummary";
 import User from "../models/User";
 import Leave from "../models/Leave";
 import { emitUserDTRUpdated } from "../socket/io";
+import { syncRenderedHours } from "./internProfileService";
 
 /**
  * CONFIGURATION
@@ -238,9 +239,9 @@ export const timeOut = async (userId: string, remarks: string) => {
   lastClock.totalHours = parseFloat((totalMinutes / 60).toFixed(2));
 
   let overtimeHours = 0;
-  if (nowMinutes <= END_TIME && nowMinutes > START_TIME) {
-    const overtimeMinutes = nowMinutes - END_TIME;
-    if (overtimeMinutes > 0) overtimeHours = overtimeMinutes / 60;
+  if (nowMinutes > END_TIME) {
+    // Worker clocked out after the hard-limit end time — compute excess minutes
+    overtimeHours = (nowMinutes - END_TIME) / 60;
   }
   lastClock.overtimeHours = parseFloat(overtimeHours.toFixed(2));
 
@@ -350,6 +351,11 @@ export const updateDTRTotals = async (dtrId: string) => {
   dtr.totalHours = parseFloat(totalHours.toFixed(2));
   dtr.undertimeHours = parseFloat(Math.max(0, REQUIRED_HOURS - totalHours).toFixed(2));
   await dtr.save();
+
+  // Keep InternProfile.rendered_hours_total in sync after every DTR mutation
+  try {
+    await syncRenderedHours(String(dtr.userId));
+  } catch (_err) {}
 
   try {
     emitUserDTRUpdated(String(dtr.userId), {
