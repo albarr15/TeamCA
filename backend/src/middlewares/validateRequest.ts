@@ -68,8 +68,11 @@ export const validateRequest = (schema: RequestSchema): RequestHandler => {
       if (!result.success) {
         validationErrors.push(...flattenZodErrors(result.error, "query"));
       } else {
-        // req.query is typed as ParsedQs; cast through unknown to apply coerced values
-        req.query = result.data as unknown as typeof req.query;
+        // req.query is a read-only getter on the underlying IncomingMessage when
+        // using the standalone `router` package, so direct assignment throws.
+        // Mutate the existing object in-place instead.
+        Object.keys(req.query).forEach((k) => delete (req.query as Record<string, unknown>)[k]);
+        Object.assign(req.query, result.data);
       }
     }
 
