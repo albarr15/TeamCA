@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+// ADDED: Import standardized response handlers
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 import { z } from "zod";
 import { timeAdjustmentService } from "../services/timeAdjustmentService.js";
 import { IUser } from "../models/User.js";
@@ -30,9 +32,8 @@ export const timeAdjustmentController = {
       const user = (req as any).user as IUser;
       const userId = (req as any).user?.user_id || (user as any)?._id;
       if (!userId) {
-        return res
-          .status(401)
-          .json({ success: false, message: "Unauthorized" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized", 401);
       }
       const validated = submitRequestSchema.parse(req.body);
 
@@ -45,14 +46,15 @@ export const timeAdjustmentController = {
         validated.originalValue,
       );
 
-      res.status(201).json({ success: true, data: adjustment });
+      // CHANGED: Standardized success response with 201 Created
+      return sendSuccess(res, adjustment, 201);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ success: false, message: "Validation error" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Validation error", 400, error);
       } else {
-        res
-          .status(500)
-          .json({ success: false, message: error.message || "Server error" });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message || "Server error", 500, error);
       }
     }
   },
@@ -62,9 +64,8 @@ export const timeAdjustmentController = {
       const user = (req as any).user as IUser;
       const userId = (req as any).user?.user_id || (user as any)?._id;
       if (!userId) {
-        return res
-          .status(401)
-          .json({ success: false, message: "Unauthorized" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized", 401);
       }
       const { status } = req.query;
 
@@ -73,11 +74,11 @@ export const timeAdjustmentController = {
         status as string | undefined,
       );
 
-      res.status(200).json({ success: true, data: requests });
+      // CHANGED: Standardized success response
+      return sendSuccess(res, requests);
     } catch (error: any) {
-      res
-        .status(500)
-        .json({ success: false, message: error.message || "Server error" });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message || "Server error", 500, error);
     }
   },
 
@@ -86,9 +87,8 @@ export const timeAdjustmentController = {
       const user = (req as any).user as IUser;
       const userId = (req as any).user?.user_id || (user as any)?._id;
       if (!userId) {
-        return res
-          .status(401)
-          .json({ success: false, message: "Unauthorized" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized", 401);
       }
 
       // Check if user is admin/head
@@ -99,9 +99,8 @@ export const timeAdjustmentController = {
       );
 
       if (!isAdmin && !isHead) {
-        return res
-          .status(403)
-          .json({ success: false, message: "Unauthorized to review requests" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized to review requests", 403);
       }
 
       const departmentId = !isAdmin
@@ -111,11 +110,11 @@ export const timeAdjustmentController = {
       const requests =
         await timeAdjustmentService.getPendingRequests(departmentId);
 
-      res.status(200).json({ success: true, data: requests });
+      // CHANGED: Standardized success response
+      return sendSuccess(res, requests);
     } catch (error: any) {
-      res
-        .status(500)
-        .json({ success: false, message: error.message || "Server error" });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message || "Server error", 500, error);
     }
   },
 
@@ -124,9 +123,8 @@ export const timeAdjustmentController = {
       const user = (req as any).user as IUser;
       const userId = (req as any).user?.user_id || (user as any)?._id;
       if (!userId) {
-        return res
-          .status(401)
-          .json({ success: false, message: "Unauthorized" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized", 401);
       }
       const id = Array.isArray(req.params.id)
         ? req.params.id[0]
@@ -141,12 +139,8 @@ export const timeAdjustmentController = {
       );
 
       if (!isAdmin && !isHead) {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            message: "Unauthorized to approve requests",
-          });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized to approve requests", 403);
       }
 
       const request = await timeAdjustmentService.approveRequest(
@@ -176,11 +170,11 @@ export const timeAdjustmentController = {
         }),
       });
 
-      res.status(200).json({ success: true, data: request });
+      // CHANGED: Standardized success response
+      return sendSuccess(res, request);
     } catch (error: any) {
-      res
-        .status(500)
-        .json({ success: false, message: error.message || "Server error" });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message || "Server error", 500, error);
     }
   },
 
@@ -189,9 +183,8 @@ export const timeAdjustmentController = {
       const user = (req as any).user as IUser;
       const userId = (req as any).user?.user_id || (user as any)?._id;
       if (!userId) {
-        return res
-          .status(401)
-          .json({ success: false, message: "Unauthorized" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized", 401);
       }
       const id = Array.isArray(req.params.id)
         ? req.params.id[0]
@@ -199,12 +192,8 @@ export const timeAdjustmentController = {
       const validated = reviewRequestSchema.parse(req.body);
 
       if (!validated.reviewNotes) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Review notes are required for rejection",
-          });
+        // CHANGED: Standardized error response
+        return sendError(res, "Review notes are required for rejection", 400);
       }
 
       // Check if user is admin/head
@@ -215,9 +204,8 @@ export const timeAdjustmentController = {
       );
 
       if (!isAdmin && !isHead) {
-        return res
-          .status(403)
-          .json({ success: false, message: "Unauthorized to reject requests" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized to reject requests", 403);
       }
 
       const request = await timeAdjustmentService.rejectRequest(
@@ -247,11 +235,11 @@ export const timeAdjustmentController = {
         }),
       });
 
-      res.status(200).json({ success: true, data: request });
+      // CHANGED: Standardized success response
+      return sendSuccess(res, request);
     } catch (error: any) {
-      res
-        .status(500)
-        .json({ success: false, message: error.message || "Server error" });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message || "Server error", 500, error);
     }
   },
 
@@ -264,16 +252,15 @@ export const timeAdjustmentController = {
       const request = await timeAdjustmentService.getRequest(id);
 
       if (!request) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Request not found" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Request not found", 404);
       }
 
-      res.status(200).json({ success: true, data: request });
+      // CHANGED: Standardized success response
+      return sendSuccess(res, request);
     } catch (error: any) {
-      res
-        .status(500)
-        .json({ success: false, message: error.message || "Server error" });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message || "Server error", 500, error);
     }
   },
 };

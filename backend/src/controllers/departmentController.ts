@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+// ADDED: Import standardized response handlers
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 import {
   type CreateDepartmentPayload,
   type UpdateDepartmentPayload,
@@ -59,7 +61,8 @@ export const listDepartments = async (_req: Request, res: Response) => {
     // Unauthenticated (e.g. first-time setup form) — return all departments
     if (!reqUser) {
       const departments = await getAllDepartments();
-      return res.status(200).json(departments);
+      // CHANGED: Replaced res.status(200).json with sendSuccess
+      return sendSuccess(res, departments);
     }
 
     // Superadmin always sees all departments.
@@ -70,7 +73,8 @@ export const listDepartments = async (_req: Request, res: Response) => {
 
     if (reqUser.global_role === "Superadmin" || (reqUser.global_role === "Admin" && !isHead)) {
       const departments = await getAllDepartments();
-      return res.status(200).json(departments);
+      // CHANGED: Replaced res.status(200).json with sendSuccess
+      return sendSuccess(res, departments);
     }
 
     // Head users (any global_role) and all Standard_Users: only their department.
@@ -78,29 +82,34 @@ export const listDepartments = async (_req: Request, res: Response) => {
       ? [String(reqUser.department_id)]
       : [];
     const departments = await getDepartmentsByIds(departmentIds);
-    return res.status(200).json(departments);
+    // CHANGED: Replaced res.status(200).json with sendSuccess
+    return sendSuccess(res, departments);
   } catch (error) {
-    return res.status(500).json({ message: error });
+    // CHANGED: Fixed empty error object bug and used sendError
+    return sendError(res, "Failed to retrieve departments.", 500, error);
   }
 };
 
 export const getDepartment = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const requestedDepartmentId = getDepartmentIdParam(req);
     const department = await getDepartmentById(requestedDepartmentId);
     if (!department) {
-      return res.status(404).json({ message: "Department not found." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Department not found.", 404);
     }
 
     if (
       req.user.global_role === "Superadmin" ||
       req.user.global_role === "Admin"
     ) {
-      return res.status(200).json(department);
+      // CHANGED: Standardized success response
+      return sendSuccess(res, department);
     }
 
     const hasDepartmentAccess =
@@ -108,21 +117,23 @@ export const getDepartment = async (req: Request, res: Response) => {
       String(req.user.department_id) === requestedDepartmentId;
 
     if (!hasDepartmentAccess) {
-      return res
-        .status(403)
-        .json({ message: "Insufficient permissions to view this department." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Insufficient permissions to view this department.", 403);
     }
 
-    return res.status(200).json(department);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, department);
   } catch (error) {
-    return res.status(500).json({ message: error });
+    // CHANGED: Fixed empty error object bug and used sendError
+    return sendError(res, "Failed to retrieve department.", 500, error);
   }
 };
 
 export const listDepartmentMembersHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const departmentId = getDepartmentIdParam(req);
@@ -134,9 +145,8 @@ export const listDepartmentMembersHandler = async (req: Request, res: Response) 
       String(req.user.department_id) === departmentId;
 
     if (!isPrivileged && !isMemberOfDept) {
-      return res
-        .status(403)
-        .json({ message: "Insufficient permissions to view this department." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Insufficient permissions to view this department.", 403);
     }
 
     const role = req.query.role ? String(req.query.role) : undefined;
@@ -153,9 +163,11 @@ export const listDepartmentMembersHandler = async (req: Request, res: Response) 
       role: normalizedRole,
     });
 
-    return res.status(200).json(result);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (error) {
-    return res.status(500).json({ message: error });
+    // CHANGED: Fixed empty error object bug and used sendError
+    return sendError(res, "Failed to retrieve department members.", 500, error);
   }
 };
 
@@ -187,20 +199,25 @@ export const createDepartmentHandler = async (req: Request, res: Response) => {
         after: getDepartmentActivitySnapshot(created),
       }),
     });
-    return res.status(201).json(created);
+    
+    // CHANGED: Standardized success response with 201 status
+    return sendSuccess(res, created, 201);
   } catch (error) {
     if (
       error instanceof Error &&
       error.message === "Department already exists."
     ) {
-      return res.status(409).json({ message: error.message });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message, 409);
     }
 
     if (error instanceof Error) {
-      return res.status(400).json({ message: error.message });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message, 400);
     }
 
-    return res.status(500).json({ message: "Failed to create department." });
+    // CHANGED: Standardized error response and included raw error
+    return sendError(res, "Failed to create department.", 500, error);
   }
 };
 
@@ -215,9 +232,8 @@ export const updateDepartmentHandler = async (req: Request, res: Response) => {
     // A department Head (regardless of global_role) may only edit their own department.
     const isHead = req.user?.department_role === "Head";
     if (isHead && String(req.user?.department_id) !== departmentId) {
-      return res
-        .status(403)
-        .json({ message: "Insufficient permissions to update this department." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Insufficient permissions to update this department.", 403);
     }
 
     const previous = await getDepartmentById(departmentId);
@@ -250,17 +266,22 @@ export const updateDepartmentHandler = async (req: Request, res: Response) => {
         after: getDepartmentActivitySnapshot(updated),
       }),
     });
-    return res.status(200).json(updated);
+    
+    // CHANGED: Standardized success response
+    return sendSuccess(res, updated);
   } catch (error) {
     if (error instanceof Error && error.message === "Department not found.") {
-      return res.status(404).json({ message: error.message });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message, 404);
     }
 
     if (error instanceof Error) {
-      return res.status(400).json({ message: error.message });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message, 400);
     }
 
-    return res.status(500).json({ message: "Failed to update department." });
+    // CHANGED: Standardized error response and included raw error
+    return sendError(res, "Failed to update department.", 500, error);
   }
 };
 
@@ -272,9 +293,8 @@ export const deleteDepartmentHandler = async (req: Request, res: Response) => {
     // Only Superadmin / non-Head Admin may delete.
     const isHead = req.user?.department_role === "Head";
     if (isHead) {
-      return res
-        .status(403)
-        .json({ message: "Insufficient permissions to delete a department." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Insufficient permissions to delete a department.", 403);
     }
 
     const previous = await getDepartmentById(departmentId);
@@ -295,26 +315,30 @@ export const deleteDepartmentHandler = async (req: Request, res: Response) => {
         before: getDepartmentActivitySnapshot(previous),
       }),
     });
-    return res
-      .status(200)
-      .json({ message: "Department deleted successfully." });
+    
+    // CHANGED: Standardized success response
+    return sendSuccess(res, { message: "Department deleted successfully." });
   } catch (error) {
     if (error instanceof Error && error.message === "Department not found.") {
-      return res.status(404).json({ message: error.message });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message, 404);
     }
 
     if (
       error instanceof Error &&
       error.message.includes("Cannot delete department")
     ) {
-      return res.status(409).json({ message: error.message });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message, 409);
     }
 
     if (error instanceof Error) {
-      return res.status(400).json({ message: error.message });
+      // CHANGED: Standardized error response
+      return sendError(res, error.message, 400);
     }
 
-    return res.status(500).json({ message: "Failed to delete department." });
+    // CHANGED: Standardized error response and included raw error
+    return sendError(res, "Failed to delete department.", 500, error);
   }
 };
 

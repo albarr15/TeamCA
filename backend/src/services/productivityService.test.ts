@@ -161,14 +161,13 @@ describe("getProductivitySummary", () => {
     userId: string,
     completedAt: Date,
   ) => {
-    const dept = await makeDepartment();
+    // CHANGED: Removed unused `dept` variable and invalid `departmentId` property from Task
     const task = await Task.create({
       title: `task-${Math.random().toString(36).slice(2, 8)}`,
       description: "",
       created_by: userId,
       priority: "Medium",
       status: "Completed",
-      departmentId: dept._id,
     });
     await TaskAssignment.create({
       task_id: task._id,

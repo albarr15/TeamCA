@@ -27,21 +27,48 @@ api.interceptors.request.use((req) => {
 });
 
 // Handle 401 responses (expired or invalid token)
+// Handle responses and unwrap standardized data automatically
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response: any) => {
+    // If the backend sends our new { success: true, data: ... } format, unwrap it!
+    if (response.data && response.data.success === true && response.data.data !== undefined) {
+      const unwrapped = response.data.data;
+
+      // Advanced Polyfill: Create an invisible safety net for legacy frontend files
+      // This allows components to use BOTH res.data AND res.data.data safely
+      if (typeof unwrapped === "object" && unwrapped !== null) {
+        if (!("data" in unwrapped)) {
+          Object.defineProperty(unwrapped, "data", { get: () => unwrapped, enumerable: false });
+        }
+        if (!("success" in unwrapped)) {
+          Object.defineProperty(unwrapped, "success", { value: true, enumerable: false });
+        }
+        // Safety net for DTR's "count" property
+        if (Array.isArray(unwrapped) && !("count" in unwrapped)) {
+          Object.defineProperty(unwrapped, "count", { get: () => unwrapped.length, enumerable: false });
+        }
+      }
+
+      response.data = unwrapped;
+    }
+    return response;
+  },
+  (error: any) => {
     if (error.response?.status === 401) {
-      // Clear expired token and redirect to login
       const authStore = useAuthStore.getState();
       authStore.logout();
 
-      // Force redirect to login
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
     }
+    
+    if (error.response?.data?.message) {
+        error.message = error.response.data.message;
+    }
+    
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;

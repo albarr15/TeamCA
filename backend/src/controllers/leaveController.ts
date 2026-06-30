@@ -1,6 +1,8 @@
 // backend/src/controllers/leaveController.ts
 
 import type { Request, Response } from "express";
+// ADDED: Import standardized response handlers
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 import {
   type CreateLeavePayload,
   type ReviewLeavePayload,
@@ -51,21 +53,22 @@ export const createLeaveHandler = async (req: Request, res: Response) => {
       reason: payload.reason,
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Leave request submitted successfully.",
-      data: leave,
-    });
+    // CHANGED: Standardized success response with 201
+    return sendSuccess(res, leave, 201);
   } catch (error) {
     const err = error as Error;
     const isValidation =
       err.message.includes("overlap") ||
       err.message.includes("Invalid date") ||
       err.message.includes("startDate must be");
-    return res.status(isValidation ? 400 : 500).json({
-      success: false,
-      message: err.message || "Failed to create leave request.",
-    });
+      
+    // CHANGED: Standardized error response while keeping the dynamic status code
+    return sendError(
+      res, 
+      err.message || "Failed to create leave request.", 
+      isValidation ? 400 : 500, 
+      error
+    );
   }
 };
 
@@ -77,37 +80,33 @@ export const getMyLeavesHandler = async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
     const leaves = await leaveService.getMyLeaves(userId);
-    return res.status(200).json({ success: true, data: leaves });
+    
+    // CHANGED: Standardized success response
+    return sendSuccess(res, leaves);
   } catch (error) {
     const err = error as Error;
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: err.message || "Failed to fetch leaves.",
-      });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message || "Failed to fetch leaves.", 500, error);
   }
 };
 
 /**
  * GET /leave/pending
  * Get pending leaves scoped to the reviewer's role:
- *   - Admin/Superadmin → all pending leaves
- *   - Department Head  → pending leaves in their department(s) only
+ * - Admin/Superadmin → all pending leaves
+ * - Department Head  → pending leaves in their department(s) only
  */
 export const getPendingLeavesHandler = async (req: Request, res: Response) => {
   try {
     const actorId = getUserId(req);
     const leaves = await leaveService.getPendingLeaves(actorId);
-    return res.status(200).json({ success: true, data: leaves });
+    
+    // CHANGED: Standardized success response
+    return sendSuccess(res, leaves);
   } catch (error) {
     const err = error as Error;
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: err.message || "Failed to fetch pending leaves.",
-      });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message || "Failed to fetch pending leaves.", 500, error);
   }
 };
 
@@ -134,10 +133,8 @@ export const reviewLeaveHandler = async (req: Request, res: Response) => {
     } else {
       // Business rule: rejectionReason is required when rejecting
       if (!payload.rejectionReason) {
-        return res.status(400).json({
-          success: false,
-          message: "rejectionReason is required when rejecting a leave.",
-        });
+        // CHANGED: Standardized error response
+        return sendError(res, "rejectionReason is required when rejecting a leave.", 400);
       }
       leave = await leaveService.rejectLeave({
         leaveId,
@@ -165,11 +162,8 @@ export const reviewLeaveHandler = async (req: Request, res: Response) => {
       }),
     });
 
-    return res.status(200).json({
-      success: true,
-      message: `Leave ${payload.status} successfully.`,
-      data: leave,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, leave);
   } catch (error) {
     const err = error as Error;
     const isNotFound = err.message.includes("not found");
@@ -180,9 +174,9 @@ export const reviewLeaveHandler = async (req: Request, res: Response) => {
       : isBadState || isMissingReason
         ? 400
         : 500;
-    return res
-      .status(statusCode)
-      .json({ success: false, message: err.message });
+        
+    // CHANGED: Standardized error response while keeping dynamic status code
+    return sendError(res, err.message, statusCode, error);
   }
 };
 
@@ -197,11 +191,8 @@ export const cancelLeaveHandler = async (req: Request, res: Response) => {
 
     const leave = await leaveService.cancelLeave(userId, leaveId);
 
-    return res.status(200).json({
-      success: true,
-      message: "Leave request cancelled.",
-      data: leave,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, leave);
   } catch (error) {
     const err = error as Error;
     const isNotFound = err.message.includes("not found");
@@ -214,8 +205,8 @@ export const cancelLeaveHandler = async (req: Request, res: Response) => {
         : isBadState
           ? 400
           : 500;
-    return res
-      .status(statusCode)
-      .json({ success: false, message: err.message });
+          
+    // CHANGED: Standardized error response while keeping dynamic status code
+    return sendError(res, err.message, statusCode, error);
   }
 };
