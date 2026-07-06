@@ -160,6 +160,18 @@ export interface AddTaskWorkLinkPayload {
   label?: string;
 }
 
+export interface AddDriveLinkPayload {
+  task_id: string;
+  url: string;
+  label?: string;
+}
+
+// A Google Drive deliverable link enriched with the parent task title,
+// returned by GET /offboarding/drive-links.
+export interface OffboardingDriveLink extends TaskWorkLink {
+  task_title: string;
+}
+
 export interface ReviewTaskWorkLinkPayload {
   status: "approved" | "rejected";
   review_notes?: string;
