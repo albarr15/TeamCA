@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+// ADDED: Import standardized response handlers
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 import { type LoginPayload } from "../schemas/authSchemas.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -23,20 +25,31 @@ export const checkEmail = async (req: Request, res: Response) => {
     const email = String(req.body?.email ?? "")
       .trim()
       .toLowerCase();
-    if (!email) return res.status(400).json({ message: "Email is required" });
+    if (!email) {
+      // CHANGED: Standardized error response
+      return sendError(res, "Email is required", 400);
+    }
 
     const user = await User.findOne({ email });
 
-    if (!user) return res.json({ exists: false, needsSetup: false });
+    if (!user) {
+      // CHANGED: Standardized success response
+      return sendSuccess(res, { exists: false, needsSetup: false });
+    }
 
     // Whitelisted user: inactive without password_hash needs setup
     const isWhitelisted = !user.is_active && !user.password_hash;
-    if (isWhitelisted) return res.json({ exists: true, needsSetup: true });
+    if (isWhitelisted) {
+      // CHANGED: Standardized success response
+      return sendSuccess(res, { exists: true, needsSetup: true });
+    }
 
     // Regular user: exists and active
-    return res.json({ exists: true, needsSetup: false });
-  } catch {
-    res.status(500).json({ message: "Server error" });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, { exists: true, needsSetup: false });
+  } catch (error) {
+    // CHANGED: Standardized error response and passed error payload
+    return sendError(res, "Server error", 500, error);
   }
 };
 
@@ -44,27 +57,26 @@ export const login = async (req: Request, res: Response) => {
   // req.body is guaranteed to be a valid LoginPayload by validateRequest middleware
   const { email, password } = req.body as LoginPayload;
   try {
-
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Invalid email or password", 401);
     }
 
     if (!user.is_active) {
-      return res.status(403).json({
-        message: "Account setup is incomplete. Please complete your setup.",
-      });
+      // CHANGED: Standardized error response
+      return sendError(res, "Account setup is incomplete. Please complete your setup.", 403);
     }
 
     if (!user.password_hash) {
-      return res.status(403).json({
-        message: "Account setup is incomplete. Please complete your setup.",
-      });
+      // CHANGED: Standardized error response
+      return sendError(res, "Account setup is incomplete. Please complete your setup.", 403);
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Invalid email or password", 401);
     }
 
     const token = jwt.sign({ user_id: user._id }, JWT_SECRET, {
@@ -84,8 +96,9 @@ export const login = async (req: Request, res: Response) => {
       changes: { email: user.email },
     }).catch(() => {}); // Ignore logging errors
 
-    res.json({ token, user: userData });
-  } catch {
+    // CHANGED: Standardized success response
+    return sendSuccess(res, { token, user: userData });
+  } catch (error) {
     // log failed login — email is in scope from the destructure above
     if (email) {
       await logActivity({
@@ -98,7 +111,8 @@ export const login = async (req: Request, res: Response) => {
         changes: { reason: "invalid credentials or server error" },
       }).catch(() => {}); // Ignore logging errors
     }
-    res.status(500).json({ message: "Server error" });
+    // CHANGED: Standardized error response and passed error payload
+    return sendError(res, "Server error", 500, error);
   }
 };
 
@@ -122,71 +136,70 @@ export const completeSetup = async (req: Request, res: Response) => {
       !department_id ||
       !school_university
     ) {
-      return res.status(400).json({ message: "Missing required fields" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Missing required fields", 400);
     }
 
     if (!Number.isFinite(required_hours) || required_hours < 1) {
-      return res
-        .status(400)
-        .json({ message: "Required hours must be at least 1" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Required hours must be at least 1", 400);
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Invalid email format", 400);
     }
 
     // Validate password strength (min 8 chars, uppercase, lowercase, number)
     if (password.length < 8) {
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 8 characters long" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Password must be at least 8 characters long", 400);
     }
     if (!/[A-Z]/.test(password)) {
-      return res.status(400).json({
-        message: "Password must contain at least one uppercase letter",
-      });
+      // CHANGED: Standardized error response
+      return sendError(res, "Password must contain at least one uppercase letter", 400);
     }
     if (!/[a-z]/.test(password)) {
-      return res.status(400).json({
-        message: "Password must contain at least one lowercase letter",
-      });
+      // CHANGED: Standardized error response
+      return sendError(res, "Password must contain at least one lowercase letter", 400);
     }
     if (!/[0-9]/.test(password)) {
-      return res
-        .status(400)
-        .json({ message: "Password must contain at least one number" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Password must contain at least one number", 400);
     }
 
     // check if whitelisted
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "Email is not whitelisted" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Email is not whitelisted", 404);
     }
     if (user.is_active) {
-      return res.status(403).json({ message: "Account is already active" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Account is already active", 403);
     }
     if (user.password_hash) {
-      return res
-        .status(403)
-        .json({ message: "Account setup is already complete" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Account setup is already complete", 403);
     }
 
     // Validate name length
     if (first_name.length < 2 || last_name.length < 2) {
-      return res
-        .status(400)
-        .json({ message: "Names must be at least 2 characters" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Names must be at least 2 characters", 400);
     }
 
     if (!mongoose.Types.ObjectId.isValid(department_id)) {
-      return res.status(400).json({ message: "Invalid department" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Invalid department", 400);
     }
 
     const department = await Department.findById(department_id).select("_id");
     if (!department) {
-      return res.status(404).json({ message: "Department not found" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Department not found", 404);
     }
 
     const departmentRole = user.departments?.[0]?.department_role ?? "Intern";
@@ -252,8 +265,10 @@ export const completeSetup = async (req: Request, res: Response) => {
     const userData = user.toObject();
     delete userData.password_hash;
 
-    res.status(200).json({ token, user: userData });
-  } catch {
-    res.status(500).json({ message: "Server error" });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, { token, user: userData });
+  } catch (error) {
+    // CHANGED: Standardized error response and passed error payload
+    return sendError(res, "Server error", 500, error);
   }
 };

@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+// ADDED: Import standardized response handlers
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 import {
   type CreateTaskPayload,
   type AssignTaskPayload,
@@ -52,12 +54,12 @@ import {
   safeActivityText,
 } from "../utils/activityLogPayload.js";
 
-
 const parseTaskId = (req: Request, res: Response): string | null => {
   const rawTaskId = req.params.taskId;
   const taskId = Array.isArray(rawTaskId) ? rawTaskId[0] : rawTaskId;
   if (!taskId) {
-    res.status(400).json({ message: "taskId is required." });
+    // CHANGED: Standardized error response
+    sendError(res, "taskId is required.", 400);
     return null;
   }
 
@@ -184,7 +186,8 @@ const getDepartmentReviewerIdsForTask = async (
 export const createTaskHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     // req.body is guaranteed to be a valid CreateTaskPayload by validateRequest middleware
@@ -242,7 +245,8 @@ export const createTaskHandler = async (req: Request, res: Response) => {
       }
     }
 
-    return res.status(201).json(created);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, created, 201);
   } catch (error) {
     if (error instanceof Error) {
       if (
@@ -250,33 +254,34 @@ export const createTaskHandler = async (req: Request, res: Response) => {
         error.message.includes("Standard users") ||
         error.message.includes("Interns")
       ) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
 
       if (
         error.message.includes("inactive") ||
         error.message.includes("does not exist")
       ) {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
-      if (error.message.includes("At least one assignee")) {
-        return res.status(400).json({ message: error.message });
-      }
-
-      if (error.message.includes("must include your own user")) {
-        return res.status(400).json({ message: error.message });
+      if (error.message.includes("At least one assignee") || error.message.includes("must include your own user")) {
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 400);
       }
     }
 
-    return res.status(500).json({ message: "Failed to create task." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to create task.", 500, error);
   }
 };
 
 export const assignTaskHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -296,7 +301,8 @@ export const assignTaskHandler = async (req: Request, res: Response) => {
     ]);
 
     if (!task) {
-      return res.status(404).json({ message: "Task not found." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Task not found.", 404);
     }
 
     const previousAssigneeIds = [
@@ -410,11 +416,13 @@ export const assignTaskHandler = async (req: Request, res: Response) => {
       }
     }
 
-    return res.status(200).json(assignment);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, assignment);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (
@@ -422,33 +430,34 @@ export const assignTaskHandler = async (req: Request, res: Response) => {
         error.message.includes("Standard users") ||
         error.message.includes("Interns")
       ) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
 
       if (
         error.message.includes("inactive") ||
         error.message.includes("does not exist")
       ) {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
-      if (error.message.includes("At least one assignee")) {
-        return res.status(400).json({ message: error.message });
-      }
-
-      if (error.message.includes("must include your own user")) {
-        return res.status(400).json({ message: error.message });
+      if (error.message.includes("At least one assignee") || error.message.includes("must include your own user")) {
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 400);
       }
     }
 
-    return res.status(500).json({ message: "Failed to assign task." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to assign task.", 500, error);
   }
 };
 
 export const listTasksHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     // req.query is guaranteed to be a valid ListTasksQuery by validateRequest middleware
@@ -459,7 +468,8 @@ export const listTasksHandler = async (req: Request, res: Response) => {
       for (const task of tasks) {
         await emitDeadlineNotificationsForTask(task);
       }
-      return res.status(200).json(tasks);
+      // CHANGED: Standardized success response
+      return sendSuccess(res, tasks);
     }
 
     const batchUserIds = query.batch_id
@@ -481,16 +491,19 @@ export const listTasksHandler = async (req: Request, res: Response) => {
       await emitDeadlineNotificationsForTask(task);
     }
 
-    return res.status(200).json(payload);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, payload);
   } catch (error) {
-    return res.status(500).json({ message: "Failed to list tasks." });
+    // CHANGED: Standardized error response and passed error payload
+    return sendError(res, "Failed to list tasks.", 500, error);
   }
 };
 
 export const getTaskDetailHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -499,26 +512,31 @@ export const getTaskDetailHandler = async (req: Request, res: Response) => {
     }
 
     const task = await getTaskDetail(req.user, taskId);
-    return res.status(200).json(task);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, task);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to fetch task details." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to fetch task details.", 500, error);
   }
 };
 
 export const updateTaskStatusHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -536,12 +554,12 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
       .select("status")
       .lean();
     if (!existingTask) {
-      return res.status(404).json({ message: "Task not found." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Task not found.", 404);
     }
     if (existingTask.status === payload.status) {
-      return res
-        .status(400)
-        .json({ message: "Task is already in the requested status." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Task is already in the requested status.", 400);
     }
 
     const updated = await updateTaskStatus(req.user, {
@@ -736,11 +754,13 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
       }
     }
 
-    return res.status(200).json(updated);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, updated);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (
@@ -750,22 +770,26 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
         error.message.includes("Attach at least one work link") ||
         error.message.includes("All deliverable links must be approved")
       ) {
-        return res.status(400).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 400);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to update task status." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to update task status.", 500, error);
   }
 };
 
 export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -776,9 +800,8 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
     // req.body is guaranteed to be a valid UpdateTaskDetailsPayload by validateRequest middleware
     const payload = req.body as UpdateTaskDetailsPayload;
     if (payload.deadline && payload.deadline.getTime() < Date.now()) {
-      return res
-        .status(400)
-        .json({ message: "Deadline cannot be in the past." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Deadline cannot be in the past.", 400);
     }
 
     const existingTask = await Task.findById(taskId)
@@ -786,7 +809,8 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
       .lean();
 
     if (!existingTask) {
-      return res.status(404).json({ message: "Task not found." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Task not found.", 404);
     }
 
     const updatedTask = await updateTaskDetails(req.user, {
@@ -854,30 +878,36 @@ export const updateTaskDetailsHandler = async (req: Request, res: Response) => {
       }
     }
 
-    return res.status(200).json(updatedTask);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, updatedTask);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("Task details are locked")) {
-        return res.status(400).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 400);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to update task details." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to update task details.", 500, error);
   }
 };
 
 export const deleteTasksHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     // req.body is guaranteed to be a valid DeleteTasksPayload by validateRequest middleware
@@ -920,26 +950,31 @@ export const deleteTasksHandler = async (req: Request, res: Response) => {
       }
     }
 
-    return res.status(200).json(result);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to delete tasks." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to delete tasks.", 500, error);
   }
 };
 
 export const addTaskFeedbackHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -987,29 +1022,34 @@ export const addTaskFeedbackHandler = async (req: Request, res: Response) => {
       }
     }
 
-    return res.status(201).json(feedback);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, feedback, 201);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (
         error.message.includes("Only supervisors") ||
         error.message.includes("do not have permission")
       ) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to submit task feedback." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to submit task feedback.", 500, error);
   }
 };
 
 export const listTaskFeedbackHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -1018,19 +1058,23 @@ export const listTaskFeedbackHandler = async (req: Request, res: Response) => {
     }
 
     const feedback = await listTaskFeedback(req.user, taskId);
-    return res.status(200).json(feedback);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, feedback);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to load task feedback." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to load task feedback.", 500, error);
   }
 };
 
@@ -1040,7 +1084,8 @@ export const listTaskStatusHistoryHandler = async (
 ) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -1049,28 +1094,31 @@ export const listTaskStatusHistoryHandler = async (
     }
 
     const history = await listTaskStatusHistory(req.user, taskId);
-    return res.status(200).json(history);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, history);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res
-      .status(500)
-      .json({ message: "Failed to load task status history." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to load task status history.", 500, error);
   }
 };
 
 export const addTaskWorkLinkHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -1086,30 +1134,36 @@ export const addTaskWorkLinkHandler = async (req: Request, res: Response) => {
       label: payload.label,
     });
 
-    return res.status(201).json(workLink);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, workLink, 201);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("before the task enters review")) {
-        return res.status(400).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 400);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to add task work link." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to add task work link.", 500, error);
   }
 };
 
 export const listTaskWorkLinksHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -1118,19 +1172,23 @@ export const listTaskWorkLinksHandler = async (req: Request, res: Response) => {
     }
 
     const workLinks = await listTaskWorkLinks(req.user, taskId);
-    return res.status(200).json(workLinks);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, workLinks);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to load task work links." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to load task work links.", 500, error);
   }
 };
 
@@ -1140,7 +1198,8 @@ export const reviewTaskWorkLinkHandler = async (
 ) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -1153,7 +1212,8 @@ export const reviewTaskWorkLinkHandler = async (
       ? rawWorkLinkId[0]
       : rawWorkLinkId;
     if (!workLinkId) {
-      return res.status(400).json({ message: "workLinkId is required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "workLinkId is required.", 400);
     }
 
     // req.body is guaranteed to be a valid ReviewTaskWorkLinkPayload by validateRequest middleware
@@ -1203,34 +1263,37 @@ export const reviewTaskWorkLinkHandler = async (
       }
     }
 
-    return res.status(200).json(reviewed);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, reviewed);
   } catch (error) {
     if (error instanceof Error) {
       if (
         error.message === "Task not found." ||
         error.message === "Work link not found."
       ) {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (
         error.message.includes("review_notes is required") ||
         error.message.includes("All deliverable links")
       ) {
-        return res.status(400).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 400);
       }
 
       if (
         error.message.includes("do not have permission") ||
         error.message.includes("Only Supervisors")
       ) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res
-      .status(500)
-      .json({ message: "Failed to review task work link." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to review task work link.", 500, error);
   }
 };
 
@@ -1240,7 +1303,8 @@ export const deleteTaskWorkLinkHandler = async (
 ) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -1253,42 +1317,47 @@ export const deleteTaskWorkLinkHandler = async (
       ? rawWorkLinkId[0]
       : rawWorkLinkId;
     if (!workLinkId) {
-      return res.status(400).json({ message: "workLinkId is required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "workLinkId is required.", 400);
     }
 
     const removed = await deleteTaskWorkLink(req.user, { taskId, workLinkId });
-    return res.status(200).json(removed);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, removed);
   } catch (error) {
     if (error instanceof Error) {
       if (
         error.message === "Task not found." ||
         error.message === "Work link not found."
       ) {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (
         error.message.includes("before the task enters review") ||
         error.message.includes("only remove your own work links")
       ) {
-        return res.status(400).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 400);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res
-      .status(500)
-      .json({ message: "Failed to remove task work link." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to remove task work link.", 500, error);
   }
 };
 
 export const listTaskCommentsHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -1297,26 +1366,31 @@ export const listTaskCommentsHandler = async (req: Request, res: Response) => {
     }
 
     const comments = await listTaskComments(req.user, taskId);
-    return res.status(200).json(comments);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, comments);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to load task comments." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to load task comments.", 500, error);
   }
 };
 
 export const addTaskCommentHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const taskId = parseTaskId(req, res);
@@ -1366,19 +1440,23 @@ export const addTaskCommentHandler = async (req: Request, res: Response) => {
       emitUsersNotification([notification.recipient_id], notification);
     }
 
-    return res.status(201).json(comment);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, comment, 201);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Task not found.") {
-        return res.status(404).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 404);
       }
 
       if (error.message.includes("do not have permission")) {
-        return res.status(403).json({ message: error.message });
+        // CHANGED: Standardized error response
+        return sendError(res, error.message, 403);
       }
     }
 
-    return res.status(500).json({ message: "Failed to add task comment." });
+    // CHANGED: Standardized error response
+    return sendError(res, "Failed to add task comment.", 500, error);
   }
 };
 
@@ -1389,7 +1467,8 @@ export const addTaskCommentHandler = async (req: Request, res: Response) => {
 export const getTaskAnalyticsHandler = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     // req.query is guaranteed to be a valid TaskAnalyticsQuery by validateRequest middleware
@@ -1529,7 +1608,8 @@ export const getTaskAnalyticsHandler = async (req: Request, res: Response) => {
       { $sort: { totalAssigned: -1 } },
     ]);
 
-    return res.status(200).json({
+    // CHANGED: Standardized success response
+    return sendSuccess(res, {
       completionMetrics: {
         total:       metrics?.total[0]?.count       ?? 0,
         completed:   metrics?.completed[0]?.count   ?? 0,
@@ -1540,8 +1620,9 @@ export const getTaskAnalyticsHandler = async (req: Request, res: Response) => {
       },
       assigneePerformance,
     });
-  } catch (_error) {
-    return res.status(500).json({ message: "Failed to fetch task analytics." });
+  } catch (error) {
+    // CHANGED: Standardized error response and passed error payload
+    return sendError(res, "Failed to fetch task analytics.", 500, error);
   }
 };
 

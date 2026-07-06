@@ -2,6 +2,8 @@
 
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { type ZodTypeAny, type ZodError } from "zod";
+// ADDED: Import standardized response handler
+import { sendError } from "../utils/responseHandler.js";
 
 /**
  * Defines which parts of the request can be validated.
@@ -39,11 +41,11 @@ const flattenZodErrors = (
  * against the provided Zod schemas.
  *
  * - If validation passes, the parsed (coerced) values replace the originals on
- *   the request object before `next()` is called, giving downstream handlers
- *   fully typed and sanitized data.
+ * the request object before `next()` is called, giving downstream handlers
+ * fully typed and sanitized data.
  *
  * - If validation fails, it short-circuits with a structured `400 Bad Request`
- *   response listing every invalid field.
+ * response listing every invalid field.
  *
  * @example
  * router.post('/login', validateRequest({ body: loginSchema }), loginController);
@@ -87,12 +89,15 @@ export const validateRequest = (schema: RequestSchema): RequestHandler => {
     }
 
     if (validationErrors.length > 0) {
-      res.status(400).json({
-        status: "error",
-        message: "Validation failed.",
-        errors: validationErrors,
-      });
-      return;
+      // CHANGED: Use sendError utility to standardize the output format
+      sendError(
+        res,
+        "Validation failed.",
+        400,
+        { errors: validationErrors }
+      );
+      
+      return; // Stop execution here to satisfy the 'void' return type
     }
 
     next();

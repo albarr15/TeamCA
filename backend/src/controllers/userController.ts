@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+// ADDED: Import standardized response handlers
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 import {
   type CreateWhitelistPayload,
   type ActivateWhitelistPayload,
@@ -160,16 +162,16 @@ const getUserActivityEmail = (user: unknown, fallback = "unknown email") => {
 export const getUsers = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const isGlobalManager = canViewAllUsers(req.user);
     const isDepartmentScoped = isHeadAdmin(req.user);
 
     if (!isGlobalManager && !isDepartmentScoped) {
-      return res
-        .status(403)
-        .json({ message: "Insufficient role permissions." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Insufficient role permissions.", 403);
     }
 
     const batchIdFilter = typeof req.query.batch_id === "string"
@@ -201,14 +203,15 @@ export const getUsers = async (req: Request, res: Response) => {
         "-password_hash",
       );
     } else {
-      return res
-        .status(403)
-        .json({ message: "Insufficient role permissions." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Insufficient role permissions.", 403);
     }
 
-    res.json(users);
-  } catch {
-    res.status(500).json({ message: "Server error" });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, users);
+  } catch (error) {
+    // CHANGED: Caught error object and standardized response
+    return sendError(res, "Server error", 500, error);
   }
 };
 
@@ -222,7 +225,8 @@ export const getUserById = async (req: Request, res: Response) => {
     if (userId === "me") {
       const authUser = req.user;
       if (!authUser?.user_id) {
-        return res.status(401).json({ message: "Unauthorized" });
+        // CHANGED: Standardized error response
+        return sendError(res, "Unauthorized", 401);
       }
       userId = String(authUser.user_id);
     }
@@ -230,12 +234,15 @@ export const getUserById = async (req: Request, res: Response) => {
     const user = await getUserByIdService(userId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      // CHANGED: Standardized error response
+      return sendError(res, "User not found", 404);
     }
 
-    res.json(user);
-  } catch {
-    res.status(500).json({ message: "Server error" });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, user);
+  } catch (error) {
+    // CHANGED: Caught error object and standardized response
+    return sendError(res, "Server error", 500, error);
   }
 };
 
@@ -302,11 +309,12 @@ export const createUser = async (req: Request, res: Response) => {
       }),
     });
 
-    res.status(201).json(newUser);
+    // CHANGED: Standardized success response with 201
+    return sendSuccess(res, newUser, 201);
   } catch (err: unknown) {
     const error = err as Error;
-
-    res.status(400).json({ message: error.message || "Failed to create user" });
+    // CHANGED: Standardized error response
+    return sendError(res, error.message || "Failed to create user", 400);
   }
 };
 
@@ -344,12 +352,13 @@ export const createWhitelistedUserHandler = async (
       }),
     });
 
-    res.status(201).json(newUser);
+    // CHANGED: Standardized success response with 201
+    return sendSuccess(res, newUser, 201);
   } catch (err: unknown) {
     const errorMessage =
       err instanceof Error ? err.message : "Failed to whitelist email";
-
-    res.status(400).json({ message: errorMessage });
+    // CHANGED: Standardized error response
+    return sendError(res, errorMessage, 400);
   }
 };
 
@@ -419,13 +428,12 @@ export const activateWhitelistedUserHandler = async (
       }),
     });
 
-    return res.json(user);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, user);
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err));
-
-    return res.status(400).json({
-      message: error.message || "Failed to activate whitelisted user",
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, error.message || "Failed to activate whitelisted user", 400);
   }
 };
 
@@ -435,9 +443,8 @@ export const deleteWhitelistedUserHandler = async (
 ) => {
   try {
     if (!req.user || req.user.global_role !== "Superadmin") {
-      return res
-        .status(403)
-        .json({ message: "Forbidden: Only Superadmins can access this." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Forbidden: Only Superadmins can access this.", 403);
     }
 
     const userId = getUserIdParam(req);
@@ -471,13 +478,12 @@ export const deleteWhitelistedUserHandler = async (
       }),
     });
 
-    return res.json(result);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err));
-
-    return res.status(400).json({
-      message: error.message || "Failed to cancel whitelisted user",
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, error.message || "Failed to cancel whitelisted user", 400);
   }
 };
 
@@ -487,7 +493,8 @@ export const deleteWhitelistedUserHandler = async (
 export const updateUser = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const userId = getUserIdParam(req);
@@ -500,7 +507,8 @@ export const updateUser = async (req: Request, res: Response) => {
       .lean();
 
     if (!previousUser) {
-      return res.status(404).json({ message: "User not found" });
+      // CHANGED: Standardized error response
+      return sendError(res, "User not found", 404);
     }
 
     const actor = req.user;
@@ -509,9 +517,8 @@ export const updateUser = async (req: Request, res: Response) => {
     const actorIsSelf = String(actor.user_id) === String(previousUser._id);
 
     if (!actorCanManageFully && !actorIsHead && !actorIsSelf) {
-      return res
-        .status(403)
-        .json({ message: "Insufficient role permissions." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Insufficient role permissions.", 403);
     }
 
     if (actorIsSelf) {
@@ -527,15 +534,13 @@ export const updateUser = async (req: Request, res: Response) => {
       );
 
       if (includesRestrictedField) {
-        return res.status(403).json({
-          message: "You can only edit your basic profile fields.",
-        });
+        // CHANGED: Standardized error response
+        return sendError(res, "You can only edit your basic profile fields.", 403);
       }
     } else if (actorIsHead) {
       if (!sharesAtLeastOneDepartment(actor, previousUser)) {
-        return res.status(403).json({
-          message: "Heads can only edit users within their department.",
-        });
+        // CHANGED: Standardized error response
+        return sendError(res, "Heads can only edit users within their department.", 403);
       }
 
       const disallowedHeadFields = [
@@ -550,23 +555,20 @@ export const updateUser = async (req: Request, res: Response) => {
       );
 
       if (includesRestrictedField) {
-        return res.status(403).json({
-          message: "Heads can only edit basic profile fields.",
-        });
+        // CHANGED: Standardized error response
+        return sendError(res, "Heads can only edit basic profile fields.", 403);
       }
     }
 
     if (!isSuperadmin(actor)) {
       if (previousUser.global_role === "Superadmin") {
-        return res.status(403).json({
-          message: "Only Superadmins can modify Superadmin accounts.",
-        });
+        // CHANGED: Standardized error response
+        return sendError(res, "Only Superadmins can modify Superadmin accounts.", 403);
       }
 
       if (payload?.global_role === "Superadmin") {
-        return res.status(403).json({
-          message: "Only Superadmins can assign the Superadmin role.",
-        });
+        // CHANGED: Standardized error response
+        return sendError(res, "Only Superadmins can assign the Superadmin role.", 403);
       }
     }
 
@@ -588,15 +590,15 @@ export const updateUser = async (req: Request, res: Response) => {
     );
 
     if (!hasAnyFieldToUpdate) {
-      return res.status(400).json({
-        message: "No editable fields provided.",
-      });
+      // CHANGED: Standardized error response
+      return sendError(res, "No editable fields provided.", 400);
     }
 
     const updatedUser = await updateUserService(userId, sanitizedPayload);
 
     if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+      // CHANGED: Standardized error response
+      return sendError(res, "User not found", 404);
     }
 
     const [recipientIds, directorySubscribers] = await Promise.all([
@@ -736,13 +738,12 @@ export const updateUser = async (req: Request, res: Response) => {
       updated_at: new Date().toISOString(),
     });
 
-    return res.json(updatedUser);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, updatedUser);
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err));
-
-    return res.status(400).json({
-      message: error.message || "Failed to update user",
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, error.message || "Failed to update user", 400);
   }
 };
 
@@ -752,9 +753,8 @@ export const getWhitelistedUsers = async (req: Request, res: Response) => {
     const currentUser = req.user; // assume authMiddleware adds req.user
 
     if (!currentUser || currentUser.global_role !== "Superadmin") {
-      return res
-        .status(403)
-        .json({ message: "Forbidden: Only Superadmins can access this." });
+      // CHANGED: Standardized error response
+      return sendError(res, "Forbidden: Only Superadmins can access this.", 403);
     }
 
     const whitelistedUsers = await User.find({
@@ -769,9 +769,11 @@ export const getWhitelistedUsers = async (req: Request, res: Response) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json(whitelistedUsers);
-  } catch {
-    res.status(500).json({ message: "Server error" });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, whitelistedUsers);
+  } catch (error) {
+    // CHANGED: Caught error object and standardized response
+    return sendError(res, "Server error", 500, error);
   }
 };
 
@@ -781,9 +783,8 @@ export const getWhitelistedUsers = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        message: "Authentication required.",
-      });
+      // CHANGED: Standardized error response
+      return sendError(res, "Authentication required.", 401);
     }
 
     const userId = getUserIdParam(req);
@@ -793,9 +794,8 @@ export const deleteUser = async (req: Request, res: Response) => {
       .lean();
 
     if (!userToDelete) {
-      return res.status(404).json({
-        message: "User not found.",
-      });
+      // CHANGED: Standardized error response
+      return sendError(res, "User not found.", 404);
     }
 
     const actor = req.user;
@@ -803,16 +803,14 @@ export const deleteUser = async (req: Request, res: Response) => {
     const actorCanDelete = isSuperadmin(actor) || isSupervisorAdmin(actor);
 
     if (!actorCanDelete) {
-      return res.status(403).json({
-        message: "Only Supervisor(Admin) or Superadmin can delete users.",
-      });
+      // CHANGED: Standardized error response
+      return sendError(res, "Only Supervisor(Admin) or Superadmin can delete users.", 403);
     }
 
     if (!isSuperadmin(actor)) {
       if (userToDelete.global_role !== "Standard_User") {
-        return res.status(403).json({
-          message: "Supervisors can only delete Standard Users.",
-        });
+        // CHANGED: Standardized error response
+        return sendError(res, "Supervisors can only delete Standard Users.", 403);
       }
     }
 
@@ -869,12 +867,11 @@ export const deleteUser = async (req: Request, res: Response) => {
       updated_at: new Date().toISOString(),
     });
 
-    return res.json(result);
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err));
-
-    return res.status(400).json({
-      message: error.message || "Failed to delete user",
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, error.message || "Failed to delete user", 400);
   }
 };

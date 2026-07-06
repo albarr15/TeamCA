@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+// ADDED: Import standardized response handlers
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 import * as dtrService from "../services/dtrService.js";
 import { z } from "zod";
 
@@ -20,16 +22,15 @@ export const timeIn = async (req: AuthRequest, res: Response) => {
 
     const result = await dtrService.timeIn(userId);
 
-    res.json({
-      success: true,
-      message: "Time-in recorded successfully",
-      data: result,
-    });
+    // CHANGED: Standardized success response (frontend interceptor will unwrap this automatically)
+    return sendSuccess(res, result);
   } catch (error: unknown) {
     const err = error as any;
 
     // Active session prevention: return structured 409 Conflict with session details
     if (err.code === "ACTIVE_SESSION") {
+      // CHANGED: Preserved this specific custom response structure because the frontend 
+      // likely relies on the 'activeSession' object to recover the UI state.
       return res.status(409).json({
         success: false,
         code: "ACTIVE_SESSION",
@@ -38,10 +39,8 @@ export const timeIn = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    res.status(400).json({
-      success: false,
-      message: err.message,
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 400, err);
   }
 };
 
@@ -53,27 +52,21 @@ export const timeOut = async (req: AuthRequest, res: Response) => {
     });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ success: false, message: parsed.error.errors[0]?.message ?? "Invalid payload" });
+      // CHANGED: Standardized error response for Zod validation failure
+      return sendError(res, parsed.error.issues[0]?.message ?? "Invalid payload", 400);
     }
-
+    
     const { remarks } = parsed.data;
 
     const result = await dtrService.timeOut(userId, remarks);
 
-    res.json({
-      success: true,
-      message: "Time-out recorded successfully",
-      data: result,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (error: unknown) {
     const err = error as Error;
 
-    res.status(400).json({
-      success: false,
-      message: err.message,
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 400, err);
   }
 };
 
@@ -83,18 +76,14 @@ export const getMyDTR = async (req: AuthRequest, res: Response) => {
 
     const dtrs = await dtrService.getMyDTR(userId);
 
-    res.json({
-      success: true,
-      count: dtrs.length,
-      data: dtrs,
-    });
+    // CHANGED: Standardized success response. The 'count' property was removed 
+    // because the frontend interceptor only extracts 'data' anyway.
+    return sendSuccess(res, dtrs);
   } catch (error: unknown) {
     const err = error as Error;
 
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 500, err);
   }
 };
 
@@ -110,20 +99,13 @@ export const getActiveSession = async (req: AuthRequest, res: Response) => {
 
     const result = await dtrService.getActiveSession(userId);
 
-    res.json({
-      success: true,
-      message: result.hasActiveSession
-        ? "Active session found"
-        : "No active session",
-      data: result,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (error: unknown) {
     const err = error as Error;
 
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 500, err);
   }
 };
 
@@ -140,27 +122,21 @@ export const startBreak = async (req: AuthRequest, res: Response) => {
     });
     const parsed = schema.safeParse(req.body || {});
     if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid payload" });
+      // CHANGED: Standardized error response
+      return sendError(res, "Invalid payload", 400);
     }
 
     const { breakType = "rest" } = parsed.data;
 
     const result = await dtrService.startBreak(userId, breakType);
 
-    res.json({
-      success: true,
-      message: "Break started successfully",
-      data: result,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (error: unknown) {
     const err = error as Error;
 
-    res.status(400).json({
-      success: false,
-      message: err.message,
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 400, err);
   }
 };
 
@@ -174,18 +150,13 @@ export const endBreak = async (req: AuthRequest, res: Response) => {
 
     const result = await dtrService.endBreak(userId);
 
-    res.json({
-      success: true,
-      message: "Break ended successfully",
-      data: result,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (error: unknown) {
     const err = error as Error;
 
-    res.status(400).json({
-      success: false,
-      message: err.message,
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 400, err);
   }
 };
 
@@ -199,18 +170,13 @@ export const getSummaryWeek = async (req: AuthRequest, res: Response) => {
 
     const summary = await dtrService.getSummary(userId, "week");
 
-    res.json({
-      success: true,
-      message: "Weekly summary retrieved",
-      data: summary,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, summary);
   } catch (error: unknown) {
     const err = error as Error;
 
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 500, err);
   }
 };
 
@@ -224,18 +190,13 @@ export const getSummaryMonth = async (req: AuthRequest, res: Response) => {
 
     const summary = await dtrService.getSummary(userId, "month");
 
-    res.json({
-      success: true,
-      message: "Monthly summary retrieved",
-      data: summary,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, summary);
   } catch (error: unknown) {
     const err = error as Error;
 
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 500, err);
   }
 };
 
@@ -266,13 +227,11 @@ export const getHistory = async (req: AuthRequest, res: Response) => {
       filters,
     );
 
-    res.json({
-      success: true,
-      message: "History retrieved successfully",
-      data: result,
-    });
+    // CHANGED: Standardized success response
+    return sendSuccess(res, result);
   } catch (error: unknown) {
     const err = error as Error;
-    res.status(500).json({ success: false, message: err.message });
+    // CHANGED: Standardized error response
+    return sendError(res, err.message, 500, err);
   }
 };
