@@ -1,11 +1,13 @@
 import api from "./api";
 import type {
+  AddDriveLinkPayload,
   AddTaskCommentPayload,
   AddTaskFeedbackPayload,
   AddTaskWorkLinkPayload,
   CreateTaskResponse,
   CreateTaskPayload,
   DeleteTasksResponse,
+  OffboardingDriveLink,
   PaginatedTaskListResponse,
   ReviewTaskWorkLinkPayload,
   Task,
@@ -196,6 +198,38 @@ export const taskService = {
         status:    params?.status,
       },
     });
+    return response.data;
+  },
+
+  // ---------------------------------------------------------------------------
+  // Offboarding – Google Drive deliverable links
+  // ---------------------------------------------------------------------------
+
+  getOffboardingDriveLinks: async (): Promise<OffboardingDriveLink[]> => {
+    const response = await api.get<OffboardingDriveLink[]>(
+      "/offboarding/drive-links",
+    );
+    return response.data;
+  },
+
+  submitOffboardingDriveLink: async (
+    payload: AddDriveLinkPayload,
+  ): Promise<TaskWorkLink> => {
+    const response = await api.post<TaskWorkLink>(
+      "/offboarding/drive-links",
+      payload,
+    );
+    return response.data;
+  },
+
+  reviewOffboardingDriveLink: async (
+    workLinkId: string,
+    payload: ReviewTaskWorkLinkPayload,
+  ): Promise<TaskWorkLink> => {
+    const response = await api.patch<TaskWorkLink>(
+      `/offboarding/drive-links/${workLinkId}/review`,
+      payload,
+    );
     return response.data;
   },
 };

@@ -1,6 +1,7 @@
 // backend/src/schemas/taskSchemas.ts
 
 import { z } from "zod";
+import { isGoogleDriveUrl } from "../utils/deliverableUtils.js";
 
 // ---------------------------------------------------------------------------
 // Create Task  (POST /tasks)
@@ -228,3 +229,50 @@ export const taskAnalyticsQuerySchema = z.object({
 });
 
 export type TaskAnalyticsQuery = z.infer<typeof taskAnalyticsQuerySchema>;
+
+// ---------------------------------------------------------------------------
+// Add Drive Link  (POST /offboarding/drive-links)
+// Accepts only Google Drive / Docs / Sheets / Slides URLs.
+// ---------------------------------------------------------------------------
+
+export const addDriveLinkSchema = z.object({
+  task_id: z.string().trim().min(1, "task_id is required."),
+  url: z
+    .string()
+    .trim()
+    .url("url must be a valid URL.")
+    .refine(
+      (val) => isGoogleDriveUrl(val),
+      "URL must be a Google Drive, Docs, Sheets, or Slides link "
+        + "(drive.google.com, docs.google.com, sheets.google.com, or slides.google.com).",
+    ),
+  label: z
+    .string()
+    .trim()
+    .max(120, "label must be 120 characters or fewer.")
+    .optional(),
+});
+
+export type AddDriveLinkPayload = z.infer<typeof addDriveLinkSchema>;
+
+// ---------------------------------------------------------------------------
+// Review Drive Link  (PATCH /offboarding/drive-links/:workLinkId/review)
+// Same shape as reviewTaskWorkLinkSchema – review_notes required on reject.
+// ---------------------------------------------------------------------------
+
+export const reviewDriveLinkSchema = z
+  .object({
+    status: z.enum(["approved", "rejected"]),
+    review_notes: z
+      .string()
+      .trim()
+      .max(1000, "review_notes must be 1000 characters or fewer.")
+      .optional(),
+  })
+  .refine(
+    (val) =>
+      val.status !== "rejected" || (val.review_notes?.trim().length ?? 0) > 0,
+    { message: "review_notes is required when rejecting a deliverable." },
+  );
+
+export type ReviewDriveLinkPayload = z.infer<typeof reviewDriveLinkSchema>;

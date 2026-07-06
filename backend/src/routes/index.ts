@@ -12,6 +12,7 @@ import activityRoutes from "./activityRoutes.js";
 import taskTemplateRoutes from "./taskTemplateRoutes.js";
 import batchRoutes from "./batchRoutes.js";
 import productivityRoutes from "./productivityRoutes.js";
+import offboardingRoutes from "./offboardingRoutes.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/leave", leaveRoutes);
 router.use("/task-templates", taskTemplateRoutes);
 router.use("/batches", batchRoutes);
 router.use("/productivity", productivityRoutes);
+router.use("/offboarding", offboardingRoutes);
 
 export default router;

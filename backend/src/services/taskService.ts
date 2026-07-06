@@ -1809,3 +1809,137 @@ export const reviewTaskWorkLink = async (
     created_at: workLink.created_at,
   });
 };
+
+// ---------------------------------------------------------------------------
+// Offboarding: list all Google Drive deliverable links accessible to actor.
+// Only surfaces links attached to tasks in "Under Review" or "Completed"
+// status, as these represent work that is actually finished.
+// ---------------------------------------------------------------------------
+
+export type DriveDeliverableItem = ReturnType<typeof normalizeWorkLink> & {
+  task_title: string;
+};
+
+export const listDriveLinksForActor = async (
+  actor: Express.AuthUser,
+): Promise<DriveDeliverableItem[]> => {
+  const actorId = String(actor.user_id);
+
+  // ------------------------------------------------------------------
+  // 1. Determine which task IDs the actor may see.
+  // ------------------------------------------------------------------
+  let accessibleTaskIds: string[];
+
+  if (canManageGlobally(actor.global_role)) {
+    // Superadmin / Admin: all tasks in terminal/review statuses
+    const tasks = await Task.find({
+      status: { $in: ["Under Review", "Completed"] },
+    })
+      .select("_id")
+      .lean();
+    accessibleTaskIds = tasks.map((t) => String(t._id));
+  } else if (canManageDepartment(actor.department_role)) {
+    // Head / Supervisor: tasks where the creator or any assignee is in
+    // the same department.
+    const departmentFilter = actor.department_id
+      ? createDepartmentMembershipFilter(String(actor.department_id))
+      : {};
+
+    const [createdByDept, assigneesInDept] = await Promise.all([
+      // Tasks created by someone in this department
+      (async () => {
+        const usersInDept = await User.find(departmentFilter).select("_id").lean();
+        const userIds = usersInDept.map((u) => u._id);
+        return Task.find({
+          created_by: { $in: userIds },
+          status: { $in: ["Under Review", "Completed"] },
+        })
+          .select("_id")
+          .lean();
+      })(),
+      // Tasks assigned to someone in this department
+      (async () => {
+        const usersInDept = await User.find(departmentFilter).select("_id").lean();
+        const userIds = usersInDept.map((u) => u._id);
+        const assignments = await TaskAssignment.find({
+          assigned_to: { $in: userIds },
+        })
+          .select("task_id")
+          .lean();
+        const taskIds = [...new Set(assignments.map((a) => String(a.task_id)))];
+        return Task.find({
+          _id: { $in: taskIds },
+          status: { $in: ["Under Review", "Completed"] },
+        })
+          .select("_id")
+          .lean();
+      })(),
+    ]);
+
+    const allIds = new Set([
+      ...createdByDept.map((t) => String(t._id)),
+      ...assigneesInDept.map((t) => String(t._id)),
+    ]);
+    accessibleTaskIds = [...allIds];
+  } else {
+    // Interns / Standard users: only tasks they are assigned to
+    const assignments = await TaskAssignment.find({ assigned_to: actorId })
+      .select("task_id")
+      .lean();
+    const assignedTaskIds = assignments.map((a) => String(a.task_id));
+
+    const tasks = await Task.find({
+      _id: { $in: assignedTaskIds },
+      status: { $in: ["Under Review", "Completed"] },
+    })
+      .select("_id")
+      .lean();
+    accessibleTaskIds = tasks.map((t) => String(t._id));
+  }
+
+  if (accessibleTaskIds.length === 0) {
+    return [];
+  }
+
+  // ------------------------------------------------------------------
+  // 2. Fetch all drive-platform work links for those tasks.
+  // ------------------------------------------------------------------
+  const links = await TaskWorkLink.find({
+    task_id: { $in: accessibleTaskIds },
+    platform: "drive",
+  })
+    .sort({ created_at: -1 })
+    .lean();
+
+  if (links.length === 0) {
+    return [];
+  }
+
+  // ------------------------------------------------------------------
+  // 3. Enrich with task_title.
+  // ------------------------------------------------------------------
+  const uniqueTaskIds = [...new Set(links.map((l) => String(l.task_id)))];
+  const tasks = await Task.find({ _id: { $in: uniqueTaskIds } })
+    .select("_id title")
+    .lean();
+  const taskTitleMap = new Map<string, string>();
+  for (const task of tasks) {
+    taskTitleMap.set(String(task._id), task.title);
+  }
+
+  return links.map((link) => ({
+    ...normalizeWorkLink({
+      _id: link._id,
+      task_id: link.task_id,
+      submitted_by: link.submitted_by,
+      url: link.url,
+      label: link.label,
+      platform: link.platform ?? "drive",
+      status: link.status ?? "pending_review",
+      review_notes: link.review_notes,
+      created_at: link.created_at,
+    }),
+    task_title: taskTitleMap.get(String(link.task_id)) ?? "Unknown Task",
+  }));
+};
+

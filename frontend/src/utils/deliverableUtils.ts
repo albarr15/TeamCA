@@ -46,3 +46,19 @@ export function isValidDeliverableUrl(url: string): boolean {
     return false;
   }
 }
+
+/**
+ * Matches the host prefix of any Google Drive-family URL.
+ * Covers drive.google.com, docs.google.com, sheets.google.com, slides.google.com.
+ */
+export const DRIVE_HOST_PATTERN =
+  /^https:\/\/(drive|docs|sheets|slides)\.google\.com\//i;
+
+/**
+ * Returns true when the URL structurally matches a Google Drive / Docs /
+ * Sheets / Slides link. Mirrors backend/src/utils/deliverableUtils.ts.
+ * Does NOT make a network request.
+ */
+export function isGoogleDriveUrl(url: string): boolean {
+  return DRIVE_HOST_PATTERN.test(url);
+}

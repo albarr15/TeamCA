@@ -80,6 +80,15 @@ function LogoutIcon() {
   );
 }
 
+function OffboardingIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7l2 2 4-4" />
+    </svg>
+  );
+}
+
 function MenuIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,11 +139,12 @@ type NavItemDef = NavItem & {
 
 const NAV_ITEM_DEFS: NavItemDef[] = [
   // ── core (all authenticated users) ──────────────────────────────────────────
-  { label: 'Dashboard', href: '/dashboard', icon: <HomeIcon /> },
-  { label: 'DTR',       href: '/dtr',       icon: <ClockIcon /> },
-  { label: 'Leave',     href: '/leave',     icon: <DocumentIcon /> },
-  { label: 'Tasks',     href: '/tasks',     icon: <TaskIcon /> },
-  { label: 'Profile',   href: '/profile',   icon: <ProfileIcon /> },
+  { label: 'Dashboard',   href: '/dashboard',   icon: <HomeIcon /> },
+  { label: 'DTR',         href: '/dtr',         icon: <ClockIcon /> },
+  { label: 'Leave',       href: '/leave',       icon: <DocumentIcon /> },
+  { label: 'Tasks',       href: '/tasks',       icon: <TaskIcon /> },
+  { label: 'Profile',     href: '/profile',     icon: <ProfileIcon /> },
+  { label: 'Offboarding', href: '/offboarding', icon: <OffboardingIcon /> },
 
   // ── managers: Admin/Superadmin OR Head/Supervisor ───────────────────────────
   // Matches backend: requireAnyRole(["Superadmin","Admin"], ["Head","Supervisor"])
