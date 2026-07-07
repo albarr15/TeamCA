@@ -577,6 +577,17 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
     const actorId = String(req.user.user_id);
     const actorFirstName = await getUserFirstNameById(actorId);
     const assigneeIds = await getTaskAssigneeIds(taskId);
+    // Include the task creator alongside assignees so their dashboard views
+    // (task table / notification-driven refresh) stay in sync too, matching
+    // the recipient pattern used for comments/feedback elsewhere in this
+    // file. Without this, a creator who isn't also an assignee never
+    // receives the "notification:received" event that triggers
+    // useTaskListSocket's refresh, so their Task Table view can go stale
+    // relative to anyone who has the task detail open (which updates via
+    // the task:<id> room regardless of assignment).
+    const recipientIds = [
+      ...new Set([...assigneeIds, String(updated.task.created_by)]),
+    ];
     const previousStatus = updated.history.previous_status;
     const newStatus = payload.status;
     const taskTitle = safeActivityText(updated.task.title, taskId);
@@ -598,7 +609,7 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
     });
 
     const statusNotifications = await createNotificationsForRecipients(
-      assigneeIds,
+      recipientIds,
       {
         actorId,
         eventType: "task_status_changed",
@@ -627,7 +638,7 @@ export const updateTaskStatusHandler = async (req: Request, res: Response) => {
     ) {
       const reviewerIds = await getDepartmentReviewerIdsForTask(taskId);
       const movedBackRecipients = [
-        ...new Set([...assigneeIds, ...reviewerIds]),
+        ...new Set([...recipientIds, ...reviewerIds]),
       ];
 
       const movedBackNotifications = await createNotificationsForRecipients(
