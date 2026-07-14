@@ -1300,9 +1300,9 @@ export const addTaskWorkLink = async (
     );
   }
 
-  if (task.status === "Under Review" || task.status === "Completed") {
+  if (task.status === "Completed") {
     throw new Error(
-      "Work links can only be added before the task enters review.",
+      "Work links cannot be added to a completed task.",
     );
   }
 
@@ -1405,9 +1405,9 @@ export const deleteTaskWorkLink = async (
     );
   }
 
-  if (task.status === "Under Review" || task.status === "Completed") {
+  if (task.status === "Completed") {
     throw new Error(
-      "Work links can only be removed before the task enters review.",
+      "Work links cannot be removed from a completed task.",
     );
   }
 
@@ -1415,11 +1415,15 @@ export const deleteTaskWorkLink = async (
     _id: input.workLinkId,
     task_id: task._id,
   })
-    .select("_id submitted_by")
+    .select("_id submitted_by status")
     .lean();
 
   if (!workLink) {
     throw new Error("Work link not found.");
+  }
+
+  if (workLink.status !== "pending_review") {
+    throw new Error("Cannot remove a deliverable link that has already been reviewed.");
   }
 
   const actorId = String(actor.user_id);

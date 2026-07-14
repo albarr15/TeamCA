@@ -92,7 +92,7 @@ export default function OffboardingPage() {
     try {
       const all = await taskService.getTasks();
       const eligible = (all as (Task & { status: TaskStatus })[]).filter(
-        (t) => t.status === 'Under Review' || t.status === 'Completed',
+        (t) => t.status === 'In Progress' || t.status === 'Under Review',
       );
       setEligible(eligible.map((t) => ({ task_id: t.task_id, title: t.title })));
     } catch {

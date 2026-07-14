@@ -19,6 +19,7 @@ import type { OffboardingDriveLink, Task } from '../../types/task';
 import HubHeader from './components/HubHeader';
 import TabNav, { type TabDefinition } from './components/TabNav';
 import DriveLinkPanel from './components/DriveLinkPanel';
+import ReviewPanel from './components/ReviewPanel';
 
 // ── Toast type ─────────────────────────────────────────────────────────────
 
@@ -87,7 +88,7 @@ const ALL_TABS: TabConfig[] = [
   {
     id: 'review-panel',
     label: 'Review Panel',
-    implemented: false,
+    implemented: true,
     visibleTo: 'reviewer',
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,12 +301,14 @@ export default function OffboardingDashboard({
                 onCopy={onCopy}
               />
             )}
+            {activeTab === 'review-panel' && (
+              <ReviewPanel />
+            )}
             {/*
              * Future panels are wired here as tabs are implemented.
              * They are not reachable yet because their tab buttons are disabled.
              *
              * activeTab === 'exit-checklist'      → <ExitChecklistPanel />
-             * activeTab === 'review-panel'         → <ReviewPanel />
              * activeTab === 'feedback-analytics'   → <FeedbackAnalyticsPanel />
              * activeTab === 'extension-request'    → <ExtensionRequestPanel />
              * activeTab === 'clearance-timeline'   → <ClearanceTimelinePanel />

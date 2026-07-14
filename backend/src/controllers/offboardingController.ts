@@ -74,13 +74,14 @@ export const submitDriveLinkHandler = async (
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
       }
-      if (error.message.includes("before the task enters review")) {
-        return res.status(400).json({ message: error.message });
-      }
-      if (error.message.includes("do not have permission") ||
-          error.message.includes("Only users assigned")) {
+      if (
+        error.message.includes("do not have permission") ||
+        error.message.includes("Only users assigned")
+      ) {
         return res.status(403).json({ message: error.message });
       }
+      // Bubble up any other domain logic errors as 400 Bad Request
+      return res.status(400).json({ message: error.message });
     }
     return res.status(500).json({ message: "Failed to submit drive link." });
   }
@@ -190,16 +191,14 @@ export const reviewDriveLinkHandler = async (
       ) {
         return res.status(404).json({ message: error.message });
       }
-      if (error.message.includes("review_notes is required") ||
-          error.message.includes("All deliverable links")) {
-        return res.status(400).json({ message: error.message });
-      }
       if (
         error.message.includes("do not have permission") ||
         error.message.includes("Only Supervisors")
       ) {
         return res.status(403).json({ message: error.message });
       }
+      // Bubble up any other domain logic errors as 400 Bad Request
+      return res.status(400).json({ message: error.message });
     }
     return res
       .status(500)
