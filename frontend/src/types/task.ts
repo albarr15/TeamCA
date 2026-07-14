@@ -78,7 +78,11 @@ export type DeliverablePlatform =
   | "notion"
   | "other";
 
-export type DeliverableStatus = "pending_review" | "approved" | "rejected";
+export type DeliverableStatus =
+  | "pending_review"
+  | "approved"
+  | "rejected"
+  | "revision_requested";
 
 export interface TaskWorkLink {
   work_link_id: string;
@@ -89,6 +93,10 @@ export interface TaskWorkLink {
   platform: DeliverablePlatform;
   status: DeliverableStatus;
   review_notes?: string;
+  /** ISO-8601 string — set when a supervisor completes a review action. */
+  reviewed_at: string | null;
+  /** User ID of the supervisor who last reviewed this link. */
+  reviewed_by: string | null;
   created_at: string | Date;
 }
 
@@ -173,8 +181,41 @@ export interface OffboardingDriveLink extends TaskWorkLink {
 }
 
 export interface ReviewTaskWorkLinkPayload {
+  /** Generic task work-link review — only approved/rejected (no revision flow). */
   status: "approved" | "rejected";
   review_notes?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Supervisor Deliverable Review  (PATCH /offboarding/drive-links/:id/review)
+// ---------------------------------------------------------------------------
+
+/** Body sent by a supervisor when reviewing an offboarding Drive deliverable. */
+export interface ReviewDriveLinkPayload {
+  status: "approved" | "rejected" | "revision_requested";
+  /** Required when status is "rejected" or "revision_requested". */
+  review_notes?: string;
+}
+
+/**
+ * Shape returned by PATCH /offboarding/drive-links/:workLinkId/review.
+ * Extends TaskWorkLink with the reviewer's full user summary so the frontend
+ * can display reviewer details without a second fetch.
+ */
+export interface ReviewDriveLinkResponse extends TaskWorkLink {
+  reviewer: TaskUserSummary;
+}
+
+// ---------------------------------------------------------------------------
+// Offboarding Drive Links Query  (GET /offboarding/drive-links)
+// ---------------------------------------------------------------------------
+
+/** Optional query parameters for the supervisor deliverable list endpoint. */
+export interface ListDriveLinksQuery {
+  /** Filter results to a single department's submissions. */
+  departmentId?: string;
+  /** Filter by deliverable review status. */
+  status?: DeliverableStatus;
 }
 
 export interface AddTaskCommentPayload {

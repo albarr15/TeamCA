@@ -3,6 +3,7 @@ import { Router } from "express";
 import authenticateJWT from "../middlewares/auth.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
 import { requestLock } from "../middlewares/requestLock.js";
+import { requireAnyRole } from "../middlewares/rbac.js";
 import {
   listOffboardingDriveLinksHandler,
   submitDriveLinkHandler,
@@ -11,6 +12,7 @@ import {
 import {
   addDriveLinkSchema,
   reviewDriveLinkSchema,
+  listDriveLinksQuerySchema,
 } from "../schemas/taskSchemas.js";
 
 const router = Router();
@@ -20,7 +22,12 @@ router.use(authenticateJWT);
 
 // GET /offboarding/drive-links
 // List all Google Drive deliverable links accessible to the current user.
-router.get("/drive-links", listOffboardingDriveLinksHandler);
+// Supports optional query filters: ?departmentId=<id>&status=<status>
+router.get(
+  "/drive-links",
+  validateRequest({ query: listDriveLinksQuerySchema }),
+  listOffboardingDriveLinksHandler,
+);
 
 // POST /offboarding/drive-links
 // Submit a new Google Drive deliverable link for a task.
@@ -31,10 +38,12 @@ router.post(
 );
 
 // PATCH /offboarding/drive-links/:workLinkId/review
-// Approve or reject a Google Drive deliverable link.
+// Approve, reject, or request revisions on a Google Drive deliverable link.
+// Restricted to Supervisors, Heads, Admins, and Superadmins at the route level.
 router.patch(
   "/drive-links/:workLinkId/review",
   requestLock,
+  requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
   validateRequest({ body: reviewDriveLinkSchema }),
   reviewDriveLinkHandler,
 );

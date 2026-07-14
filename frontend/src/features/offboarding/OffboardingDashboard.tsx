@@ -198,7 +198,7 @@ export interface OffboardingDashboardProps {
   onSubmit: (taskId: string, url: string, label?: string) => Promise<void>;
   onReview: (
     workLinkId: string,
-    status: 'approved' | 'rejected',
+    status: 'approved' | 'rejected' | 'revision_requested',
     notes?: string,
   ) => Promise<void>;
   onCopy: (id: string, url: string) => Promise<void>;

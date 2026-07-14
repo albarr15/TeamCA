@@ -14,6 +14,7 @@ const CARD_STATUS_CLS: Record<DeliverableStatus, string> = {
   pending_review: 'border-slate-200 bg-white',
   approved: 'border-green-200 bg-green-50/40',
   rejected: 'border-red-200 bg-red-50/40',
+  revision_requested: 'border-indigo-200 bg-indigo-50/40',
 };
 
 // ---------------------------------------------------------------------------
@@ -35,7 +36,7 @@ type DriveLinkCardProps = {
   reviewingId: string | null;
   copiedId: string | null;
   onCopy: (id: string, url: string) => void;
-  onReview: (id: string, status: 'approved' | 'rejected', notes?: string) => void;
+  onReview: (id: string, status: 'approved' | 'rejected' | 'revision_requested', notes?: string) => void;
 };
 
 // ---------------------------------------------------------------------------
@@ -110,11 +111,27 @@ export default function DriveLinkCard({
         })}
       </p>
 
-      {/* Reviewer notes – shown when rejected */}
-      {status === 'rejected' && link.review_notes && (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-          <p className="text-[11px] font-semibold text-red-700">Reviewer feedback</p>
-          <p className="mt-0.5 whitespace-pre-wrap text-xs text-red-800">
+      {/* Reviewer notes – shown when rejected or revision requested */}
+      {(status === 'rejected' || status === 'revision_requested') && link.review_notes && (
+        <div
+          className={`mb-3 rounded-lg border px-3 py-2 ${
+            status === 'rejected'
+              ? 'border-red-200 bg-red-50'
+              : 'border-indigo-200 bg-indigo-50'
+          }`}
+        >
+          <p
+            className={`text-[11px] font-semibold ${
+              status === 'rejected' ? 'text-red-700' : 'text-indigo-700'
+            }`}
+          >
+            {status === 'rejected' ? 'Reviewer feedback' : 'Revision instructions'}
+          </p>
+          <p
+            className={`mt-0.5 whitespace-pre-wrap text-xs ${
+              status === 'rejected' ? 'text-red-800' : 'text-indigo-800'
+            }`}
+          >
             {link.review_notes}
           </p>
         </div>

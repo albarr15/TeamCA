@@ -134,7 +134,7 @@ export default function OffboardingPage() {
 
   const handleReview = async (
     workLinkId: string,
-    status: 'approved' | 'rejected',
+    status: 'approved' | 'rejected' | 'revision_requested',
     notes?: string,
   ) => {
     if (!canReview) return;
@@ -147,7 +147,11 @@ export default function OffboardingPage() {
       });
       await fetchLinks();
       pushToast(
-        status === 'approved' ? 'Deliverable approved ✓' : 'Deliverable rejected',
+        status === 'approved'
+          ? 'Deliverable approved ✓'
+          : status === 'rejected'
+            ? 'Deliverable rejected'
+            : 'Revision requested',
       );
     } catch (err: any) {
       setError(

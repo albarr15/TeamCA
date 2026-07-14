@@ -262,7 +262,7 @@ export type AddDriveLinkPayload = z.infer<typeof addDriveLinkSchema>;
 
 export const reviewDriveLinkSchema = z
   .object({
-    status: z.enum(["approved", "rejected"]),
+    status: z.enum(["approved", "rejected", "revision_requested"]),
     review_notes: z
       .string()
       .trim()
@@ -271,8 +271,23 @@ export const reviewDriveLinkSchema = z
   })
   .refine(
     (val) =>
-      val.status !== "rejected" || (val.review_notes?.trim().length ?? 0) > 0,
-    { message: "review_notes is required when rejecting a deliverable." },
+      !["rejected", "revision_requested"].includes(val.status) ||
+      (val.review_notes?.trim().length ?? 0) > 0,
+    { message: "review_notes is required when rejecting or requesting revisions on a deliverable." },
   );
 
 export type ReviewDriveLinkPayload = z.infer<typeof reviewDriveLinkSchema>;
+
+// ---------------------------------------------------------------------------
+// List Drive Links Query  (GET /offboarding/drive-links)
+// Supervisor panel filter params: departmentId and/or deliverable status.
+// ---------------------------------------------------------------------------
+
+export const listDriveLinksQuerySchema = z.object({
+  departmentId: z.string().trim().min(1).optional(),
+  status: z
+    .enum(["pending_review", "approved", "rejected", "revision_requested"])
+    .optional(),
+});
+
+export type ListDriveLinksQuery = z.infer<typeof listDriveLinksQuerySchema>;

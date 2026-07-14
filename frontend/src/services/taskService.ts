@@ -7,8 +7,11 @@ import type {
   CreateTaskResponse,
   CreateTaskPayload,
   DeleteTasksResponse,
+  ListDriveLinksQuery,
   OffboardingDriveLink,
   PaginatedTaskListResponse,
+  ReviewDriveLinkPayload,
+  ReviewDriveLinkResponse,
   ReviewTaskWorkLinkPayload,
   Task,
   TaskAnalyticsParams,
@@ -201,13 +204,23 @@ export const taskService = {
     return response.data;
   },
 
-  // ---------------------------------------------------------------------------
-  // Offboarding – Google Drive deliverable links
-  // ---------------------------------------------------------------------------
-
-  getOffboardingDriveLinks: async (): Promise<OffboardingDriveLink[]> => {
+  /**
+   * GET /offboarding/drive-links
+   * Returns drive deliverable links visible to the current user.
+   * Supervisors/admins can filter by departmentId and/or status.
+   */
+  getOffboardingDriveLinks: async (
+    query?: ListDriveLinksQuery,
+  ): Promise<OffboardingDriveLink[]> => {
     const response = await api.get<OffboardingDriveLink[]>(
       "/offboarding/drive-links",
+      {
+        headers: {},
+        params: {
+          departmentId: query?.departmentId,
+          status: query?.status,
+        },
+      },
     );
     return response.data;
   },
@@ -222,11 +235,16 @@ export const taskService = {
     return response.data;
   },
 
+  /**
+   * PATCH /offboarding/drive-links/:workLinkId/review
+   * Supervisor action: approve, reject, or request revisions.
+   * Returns the updated work link with an inline reviewer summary.
+   */
   reviewOffboardingDriveLink: async (
     workLinkId: string,
-    payload: ReviewTaskWorkLinkPayload,
-  ): Promise<TaskWorkLink> => {
-    const response = await api.patch<TaskWorkLink>(
+    payload: ReviewDriveLinkPayload,
+  ): Promise<ReviewDriveLinkResponse> => {
+    const response = await api.patch<ReviewDriveLinkResponse>(
       `/offboarding/drive-links/${workLinkId}/review`,
       payload,
     );
