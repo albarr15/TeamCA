@@ -16,10 +16,12 @@
 import { useState } from 'react';
 
 import type { OffboardingDriveLink, Task } from '../../types/task';
+import type { InternProfile } from '../../types/user';
 import HubHeader from './components/HubHeader';
 import TabNav, { type TabDefinition } from './components/TabNav';
 import DriveLinkPanel from './components/DriveLinkPanel';
 import ReviewPanel from './components/ReviewPanel';
+import ExitChecklistPanel from './components/ExitChecklistPanel';
 
 // ── Toast type ─────────────────────────────────────────────────────────────
 
@@ -74,7 +76,7 @@ const ALL_TABS: TabConfig[] = [
   {
     id: 'exit-checklist',
     label: 'Exit Checklist',
-    implemented: false,
+    implemented: true,
     visibleTo: 'intern',
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,6 +197,12 @@ export interface OffboardingDashboardProps {
   copiedId: string | null;
   toasts: ToastItem[];
 
+  // Exit Checklist data
+  allTasks: Task[];
+  internProfile: InternProfile | null;
+  checklistLoading: boolean;
+  checklistError: string;
+
   // Handlers
   onSubmit: (taskId: string, url: string, label?: string) => Promise<void>;
   onReview: (
@@ -225,6 +233,10 @@ export default function OffboardingDashboard({
   reviewingId,
   copiedId,
   toasts,
+  allTasks,
+  internProfile,
+  checklistLoading,
+  checklistError,
   onSubmit,
   onReview,
   onCopy,
@@ -304,11 +316,20 @@ export default function OffboardingDashboard({
             {activeTab === 'review-panel' && (
               <ReviewPanel />
             )}
+            {activeTab === 'exit-checklist' && (
+              <ExitChecklistPanel
+                internProfile={internProfile}
+                tasks={allTasks}
+                driveLinks={links}
+                loading={checklistLoading}
+                error={checklistError}
+                onNavigateToTab={(tabId) => setActiveTab(tabId)}
+              />
+            )}
             {/*
-             * Future panels are wired here as tabs are implemented.
+             * Remaining panels are wired here as tabs are implemented.
              * They are not reachable yet because their tab buttons are disabled.
              *
-             * activeTab === 'exit-checklist'      → <ExitChecklistPanel />
              * activeTab === 'feedback-analytics'   → <FeedbackAnalyticsPanel />
              * activeTab === 'extension-request'    → <ExtensionRequestPanel />
              * activeTab === 'clearance-timeline'   → <ClearanceTimelinePanel />

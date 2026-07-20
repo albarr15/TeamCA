@@ -12,8 +12,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { taskService } from '../../services/taskService';
+import { internProfileService } from '../../services/internProfileService';
 import { useAuthStore } from '../../store/authStore';
 import type { OffboardingDriveLink, Task, TaskStatus } from '../../types/task';
+import type { InternProfile } from '../../types/user';
 import OffboardingDashboard, { type ToastItem } from './OffboardingDashboard';
 
 export default function OffboardingPage() {
@@ -34,6 +36,12 @@ export default function OffboardingPage() {
   const [reviewingId, setReviewingId]   = useState<string | null>(null);
   const [copiedId, setCopiedId]         = useState<string | null>(null);
   const [toasts, setToasts]             = useState<ToastItem[]>([]);
+
+  // ── Exit Checklist state (Internship Exit Requirement Tracker) ────────────
+  const [allTasks, setAllTasks]                 = useState<Task[]>([]);
+  const [internProfile, setInternProfile]       = useState<InternProfile | null>(null);
+  const [checklistLoading, setChecklistLoading] = useState(false);
+  const [checklistError, setChecklistError]     = useState('');
 
   // ── Role flags ───────────────────────────────────────────────────────────
   const isSuperadmin      = currentUser?.global_role === 'Superadmin';
@@ -102,13 +110,43 @@ export default function OffboardingPage() {
     }
   }, []);
 
+  /** Fetch data backing the "Exit Checklist" tab: the intern's own tasks and profile hours. */
+  const fetchChecklistData = useCallback(async () => {
+    if (!currentUserId) return;
+    setChecklistLoading(true);
+    setChecklistError('');
+    try {
+      const [tasks, profile] = await Promise.all([
+        taskService.getTasks(),
+        internProfileService.getInternProfileByUserId(currentUserId),
+      ]);
+      setAllTasks(tasks as Task[]);
+      setInternProfile(profile);
+    } catch (err: any) {
+      setChecklistError(
+        err?.response?.data?.message || 'Failed to load exit requirements.',
+      );
+    } finally {
+      setChecklistLoading(false);
+    }
+  }, [currentUserId]);
+
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!mounted || !isAuthenticated) return;
     void fetchLinks();
     if (canSubmit) void fetchEligibleTasks();
-  }, [canSubmit, fetchEligibleTasks, fetchLinks, isAuthenticated, mounted]);
+    if (isIntern) void fetchChecklistData();
+  }, [
+    canSubmit,
+    fetchChecklistData,
+    fetchEligibleTasks,
+    fetchLinks,
+    isAuthenticated,
+    isIntern,
+    mounted,
+  ]);
 
   // ── Auth guard ───────────────────────────────────────────────────────────
   if (!mounted) return null;
@@ -197,6 +235,11 @@ export default function OffboardingPage() {
       reviewingId={reviewingId}
       copiedId={copiedId}
       toasts={toasts}
+      // Exit Checklist data
+      allTasks={allTasks}
+      internProfile={internProfile}
+      checklistLoading={checklistLoading}
+      checklistError={checklistError}
       // Handlers
       onSubmit={handleSubmit}
       onReview={handleReview}
