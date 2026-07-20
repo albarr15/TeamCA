@@ -6,6 +6,7 @@ import type { Request, Response } from "express";
 import type {
   AddDriveLinkPayload,
   ReviewDriveLinkPayload,
+  ListDriveLinksQuery,
 } from "../schemas/taskSchemas.js";
 import {
   addTaskWorkLink,
@@ -32,7 +33,9 @@ export const listOffboardingDriveLinksHandler = async (
       return res.status(401).json({ message: "Authentication required." });
     }
 
-    const links = await listDriveLinksForActor(req.user);
+    // req.query has already been validated + coerced by validateRequest middleware.
+    const { departmentId, status } = req.query as unknown as ListDriveLinksQuery;
+    const links = await listDriveLinksForActor(req.user, { departmentId, status });
     return res.status(200).json(links);
   } catch (_error) {
     return res
@@ -71,13 +74,14 @@ export const submitDriveLinkHandler = async (
       if (error.message === "Task not found.") {
         return res.status(404).json({ message: error.message });
       }
-      if (error.message.includes("before the task enters review")) {
-        return res.status(400).json({ message: error.message });
-      }
-      if (error.message.includes("do not have permission") ||
-          error.message.includes("Only users assigned")) {
+      if (
+        error.message.includes("do not have permission") ||
+        error.message.includes("Only users assigned")
+      ) {
         return res.status(403).json({ message: error.message });
       }
+      // Bubble up any other domain logic errors as 400 Bad Request
+      return res.status(400).json({ message: error.message });
     }
     return res.status(500).json({ message: "Failed to submit drive link." });
   }
@@ -144,13 +148,23 @@ export const reviewDriveLinkHandler = async (
             actorUser.email
           : "Your supervisor";
         const statusLabel =
-          payload.status === "approved" ? "approved" : "rejected";
+          payload.status === "approved"
+            ? "approved"
+            : payload.status === "rejected"
+              ? "rejected"
+              : "requested revisions for";
+        const statusTitle =
+          payload.status === "approved"
+            ? "Deliverable Approved"
+            : payload.status === "rejected"
+              ? "Deliverable Rejected"
+              : "Revision Requested";
         const notifications = await createNotificationsForRecipients(
           [submitterId],
           {
             actorId,
             eventType: "task_deliverable_reviewed",
-            title: `Deliverable ${statusLabel}`,
+            title: statusTitle,
             message: `${actorName} ${statusLabel} your Google Drive deliverable for "${task.title}".`,
             entityType: "task",
             entityId: taskId,
@@ -178,17 +192,13 @@ export const reviewDriveLinkHandler = async (
         return res.status(404).json({ message: error.message });
       }
       if (
-        error.message.includes("review_notes is required") ||
-        error.message.includes("All deliverable links")
-      ) {
-        return res.status(400).json({ message: error.message });
-      }
-      if (
         error.message.includes("do not have permission") ||
         error.message.includes("Only Supervisors")
       ) {
         return res.status(403).json({ message: error.message });
       }
+      // Bubble up any other domain logic errors as 400 Bad Request
+      return res.status(400).json({ message: error.message });
     }
     return res
       .status(500)

@@ -70,8 +70,13 @@ export type AddTaskWorkLinkInput = {
 export type ReviewTaskWorkLinkInput = {
   taskId: string;
   workLinkId: string;
-  status: "approved" | "rejected";
+  status: "approved" | "rejected" | "revision_requested";
   review_notes?: string;
+};
+
+export type ListDriveLinksFilter = {
+  departmentId?: string;
+  status?: DeliverableStatus;
 };
 
 export type DeleteTaskWorkLinkInput = {
@@ -268,6 +273,8 @@ const normalizeWorkLink = (workLink: {
   platform: DeliverablePlatform;
   status: DeliverableStatus;
   review_notes?: string;
+  reviewed_at?: Date;
+  reviewed_by?: Types.ObjectId | string | null;
   created_at: Date;
 }) => ({
   work_link_id: String(workLink._id),
@@ -278,6 +285,8 @@ const normalizeWorkLink = (workLink: {
   platform: workLink.platform,
   status: workLink.status,
   review_notes: workLink.review_notes,
+  reviewed_at: workLink.reviewed_at ?? null,
+  reviewed_by: workLink.reviewed_by ? String(workLink.reviewed_by) : null,
   created_at: workLink.created_at,
 });
 
@@ -1291,9 +1300,9 @@ export const addTaskWorkLink = async (
     );
   }
 
-  if (task.status === "Under Review" || task.status === "Completed") {
+  if (task.status === "Completed") {
     throw new Error(
-      "Work links can only be added before the task enters review.",
+      "Work links cannot be added to a completed task.",
     );
   }
 
@@ -1396,9 +1405,9 @@ export const deleteTaskWorkLink = async (
     );
   }
 
-  if (task.status === "Under Review" || task.status === "Completed") {
+  if (task.status === "Completed") {
     throw new Error(
-      "Work links can only be removed before the task enters review.",
+      "Work links cannot be removed from a completed task.",
     );
   }
 
@@ -1406,11 +1415,15 @@ export const deleteTaskWorkLink = async (
     _id: input.workLinkId,
     task_id: task._id,
   })
-    .select("_id submitted_by")
+    .select("_id submitted_by status")
     .lean();
 
   if (!workLink) {
     throw new Error("Work link not found.");
+  }
+
+  if (workLink.status !== "pending_review") {
+    throw new Error("Cannot remove a deliverable link that has already been reviewed.");
   }
 
   const actorId = String(actor.user_id);
@@ -1786,28 +1799,48 @@ export const reviewTaskWorkLink = async (
     throw new Error("Work link not found.");
   }
 
-  if (input.status === "rejected" && !input.review_notes?.trim()) {
-    throw new Error("review_notes is required when rejecting a deliverable.");
+  if (
+    ["rejected", "revision_requested"].includes(input.status) &&
+    !input.review_notes?.trim()
+  ) {
+    throw new Error(
+      "review_notes is required when rejecting or requesting revisions on a deliverable.",
+    );
   }
 
   workLink.status = input.status;
-  workLink.review_notes =
-    input.status === "rejected"
-      ? (input.review_notes?.trim() ?? undefined)
-      : undefined;
+  // Always persist review_notes (cleared to undefined when approving without notes)
+  workLink.review_notes = input.review_notes?.trim() || undefined;
+  workLink.reviewed_at  = new Date();
+  workLink.reviewed_by  = new Types.ObjectId(String(actor.user_id));
   await workLink.save();
 
-  return normalizeWorkLink({
-    _id: workLink._id,
-    task_id: workLink.task_id,
-    submitted_by: workLink.submitted_by,
-    url: workLink.url,
-    label: workLink.label,
-    platform: workLink.platform ?? "other",
-    status: workLink.status,
-    review_notes: workLink.review_notes,
-    created_at: workLink.created_at,
-  });
+  // Populate reviewer summary for the response body (ObjectId stored in DB; full
+  // name/email returned inline so the frontend doesn't need a second request).
+  const reviewerUser = await User.findById(actor.user_id)
+    .select("first_name last_name email")
+    .lean();
+
+  const reviewerSummary = reviewerUser
+    ? normalizeUser(reviewerUser)
+    : { user_id: String(actor.user_id), first_name: "", last_name: "", email: "" };
+
+  return {
+    ...normalizeWorkLink({
+      _id: workLink._id,
+      task_id: workLink.task_id,
+      submitted_by: workLink.submitted_by,
+      url: workLink.url,
+      label: workLink.label,
+      platform: workLink.platform ?? "other",
+      status: workLink.status,
+      review_notes: workLink.review_notes,
+      reviewed_at: workLink.reviewed_at,
+      reviewed_by: workLink.reviewed_by,
+      created_at: workLink.created_at,
+    }),
+    reviewer: reviewerSummary,
+  };
 };
 
 // ---------------------------------------------------------------------------
@@ -1822,6 +1855,7 @@ export type DriveDeliverableItem = ReturnType<typeof normalizeWorkLink> & {
 
 export const listDriveLinksForActor = async (
   actor: Express.AuthUser,
+  filter: ListDriveLinksFilter = {},
 ): Promise<DriveDeliverableItem[]> => {
   const actorId = String(actor.user_id);
 
@@ -1831,12 +1865,32 @@ export const listDriveLinksForActor = async (
   let accessibleTaskIds: string[];
 
   if (canManageGlobally(actor.global_role)) {
-    // Superadmin / Admin: all tasks in terminal/review statuses
-    const tasks = await Task.find({
-      status: { $in: ["Under Review", "Completed"] },
-    })
-      .select("_id")
-      .lean();
+    // Superadmin / Admin: all tasks in terminal/review statuses.
+    // If departmentId filter is provided, scope down to that department's members.
+    // Build the initial task query for terminal statuses.
+    const baseTaskFilter = { status: { $in: ["Under Review", "Completed"] } };
+    let finalTaskFilter: object = baseTaskFilter;
+
+    if (filter.departmentId) {
+      const deptFilter = createDepartmentMembershipFilter(filter.departmentId);
+      const usersInDept = await User.find(deptFilter).select("_id").lean();
+      const deptUserIds = usersInDept.map((u) => u._id);
+      const assignments = await TaskAssignment.find({
+        assigned_to: { $in: deptUserIds },
+      })
+        .select("task_id")
+        .lean();
+      const deptTaskIds = [
+        ...new Set(assignments.map((a) => String(a.task_id))),
+      ];
+      finalTaskFilter = {
+        _id: { $in: deptTaskIds },
+        status: { $in: ["Under Review", "Completed"] },
+      };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tasks = await Task.find(finalTaskFilter as any).select("_id").lean();
     accessibleTaskIds = tasks.map((t) => String(t._id));
   } else if (canManageDepartment(actor.department_role)) {
     // Head / Supervisor: tasks where the creator or any assignee is in
@@ -1904,10 +1958,15 @@ export const listDriveLinksForActor = async (
   // ------------------------------------------------------------------
   // 2. Fetch all drive-platform work links for those tasks.
   // ------------------------------------------------------------------
-  const links = await TaskWorkLink.find({
+  // Build the TaskWorkLink query; apply optional status filter from caller.
+  const linkFilter: object = {
     task_id: { $in: accessibleTaskIds },
     platform: "drive",
-  })
+    ...(filter.status ? { status: filter.status } : {}),
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const links = await TaskWorkLink.find(linkFilter as any)
     .sort({ created_at: -1 })
     .lean();
 
@@ -1937,6 +1996,8 @@ export const listDriveLinksForActor = async (
       platform: link.platform ?? "drive",
       status: link.status ?? "pending_review",
       review_notes: link.review_notes,
+      reviewed_at: link.reviewed_at,
+      reviewed_by: link.reviewed_by,
       created_at: link.created_at,
     }),
     task_title: taskTitleMap.get(String(link.task_id)) ?? "Unknown Task",

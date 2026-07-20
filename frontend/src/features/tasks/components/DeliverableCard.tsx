@@ -65,6 +65,10 @@ const STATUS_CONFIG: Record<DeliverableStatus, { label: string; cls: string }> =
     label: 'Rejected',
     cls: 'border-red-200 bg-red-50 text-red-700',
   },
+  revision_requested: {
+    label: 'Revision Requested',
+    cls: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+  },
 };
 
 // Colour tokens per platform (used for the chip border / background tint)
@@ -87,6 +91,7 @@ const CARD_STATUS_CLS: Record<DeliverableStatus, string> = {
   pending_review: 'border-slate-200 bg-white',
   approved: 'border-green-200 bg-green-50/40',
   rejected: 'border-red-200 bg-red-50/40',
+  revision_requested: 'border-indigo-200 bg-indigo-50/40',
 };
 
 // ---------------------------------------------------------------------------
@@ -178,11 +183,29 @@ export default function DeliverableCard({
         {link.label?.trim() || link.url}
       </a>
 
-      {/* Rejection notes */}
-      {status === 'rejected' && link.review_notes && (
-        <div className="mt-2.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-          <p className="text-[11px] font-semibold text-red-700">Feedback from reviewer</p>
-          <p className="mt-0.5 whitespace-pre-wrap text-xs text-red-800">{link.review_notes}</p>
+      {/* Review notes – shown when rejected or revision requested */}
+      {(status === 'rejected' || status === 'revision_requested') && link.review_notes && (
+        <div
+          className={`mt-2.5 rounded-lg border px-3 py-2 ${
+            status === 'rejected'
+              ? 'border-red-200 bg-red-50'
+              : 'border-indigo-200 bg-indigo-50'
+          }`}
+        >
+          <p
+            className={`text-[11px] font-semibold ${
+              status === 'rejected' ? 'text-red-700' : 'text-indigo-700'
+            }`}
+          >
+            {status === 'rejected' ? 'Feedback from reviewer' : 'Revision instructions'}
+          </p>
+          <p
+            className={`mt-0.5 whitespace-pre-wrap text-xs ${
+              status === 'rejected' ? 'text-red-800' : 'text-indigo-800'
+            }`}
+          >
+            {link.review_notes}
+          </p>
         </div>
       )}
 

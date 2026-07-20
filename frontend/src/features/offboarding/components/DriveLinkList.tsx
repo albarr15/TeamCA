@@ -13,12 +13,13 @@ type DriveLinkListProps = {
   reviewingId: string | null;
   copiedId: string | null;
   onCopy: (id: string, url: string) => void;
-  onReview: (id: string, status: 'approved' | 'rejected', notes?: string) => void;
+  onReview: (id: string, status: 'approved' | 'rejected' | 'revision_requested', notes?: string) => void;
 };
 
-const STATUS_ORDER: DeliverableStatus[] = ['pending_review', 'rejected', 'approved'];
+const STATUS_ORDER: DeliverableStatus[] = ['pending_review', 'revision_requested', 'rejected', 'approved'];
 const STATUS_SECTION_LABEL: Record<DeliverableStatus, string> = {
   pending_review: 'Pending Review',
+  revision_requested: 'Revision Requested',
   rejected: 'Needs Revision',
   approved: 'Approved',
 };
@@ -64,7 +65,7 @@ export default function DriveLinkList({
       acc[s] = links.filter((l) => (l.status ?? 'pending_review') === s);
       return acc;
     },
-    { pending_review: [], rejected: [], approved: [] },
+    { pending_review: [], revision_requested: [], rejected: [], approved: [] },
   );
 
   return (
@@ -82,7 +83,7 @@ export default function DriveLinkList({
 
       {/* Sections by status */}
       {STATUS_ORDER.map((status) => {
-        const sectionLinks = grouped[status];
+        const sectionLinks = grouped[status as DeliverableStatus];
         if (sectionLinks.length === 0) return null;
         return (
           <section key={status} aria-label={STATUS_SECTION_LABEL[status]}>

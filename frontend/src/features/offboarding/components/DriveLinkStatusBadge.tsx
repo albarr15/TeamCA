@@ -19,6 +19,10 @@ const STATUS_CONFIG: Record<DeliverableStatus, Config> = {
     label: 'Rejected',
     cls: 'border-red-200 bg-red-50 text-red-700',
   },
+  revision_requested: {
+    label: 'Revision Requested',
+    cls: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+  },
 };
 
 type Props = { status: DeliverableStatus; className?: string };
@@ -31,6 +35,7 @@ export default function DriveLinkStatusBadge({ status, className = '' }: Props) 
     >
       {status === 'approved' && <span aria-hidden="true">✓</span>}
       {status === 'rejected' && <span aria-hidden="true">✗</span>}
+      {status === 'revision_requested' && <span aria-hidden="true">↩</span>}
       {status === 'pending_review' && (
         <span
           className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400"
