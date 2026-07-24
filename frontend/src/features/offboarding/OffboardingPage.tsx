@@ -13,9 +13,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { taskService } from '../../services/taskService';
 import { internProfileService } from '../../services/internProfileService';
+import { extensionService } from '../../services/extensionService';
 import { useAuthStore } from '../../store/authStore';
 import type { OffboardingDriveLink, Task, TaskStatus } from '../../types/task';
 import type { InternProfile } from '../../types/user';
+import type { ExtensionRequest } from '../../types/extension';
 import OffboardingDashboard, { type ToastItem } from './OffboardingDashboard';
 
 export default function OffboardingPage() {
@@ -42,6 +44,14 @@ export default function OffboardingPage() {
   const [internProfile, setInternProfile]       = useState<InternProfile | null>(null);
   const [checklistLoading, setChecklistLoading] = useState(false);
   const [checklistError, setChecklistError]     = useState('');
+
+  // ── Extension Request state ────────────────────────────────────────────────
+  const [myExtensionRequests, setMyExtensionRequests]     = useState<ExtensionRequest[]>([]);
+  const [pendingExtensions, setPendingExtensions]         = useState<ExtensionRequest[]>([]);
+  const [extensionsLoading, setExtensionsLoading]         = useState(false);
+  const [extensionsError, setExtensionsError]             = useState('');
+  const [extensionSubmitting, setExtensionSubmitting]     = useState(false);
+  const [extensionReviewingId, setExtensionReviewingId]   = useState<string | null>(null);
 
   // ── Role flags ───────────────────────────────────────────────────────────
   const isSuperadmin      = currentUser?.global_role === 'Superadmin';
@@ -131,6 +141,26 @@ export default function OffboardingPage() {
     }
   }, [currentUserId]);
 
+  /** Fetch data backing the "Extension Request" tab: own history and/or the reviewer queue. */
+  const fetchExtensionRequests = useCallback(async () => {
+    setExtensionsLoading(true);
+    setExtensionsError('');
+    try {
+      const [mine, pending] = await Promise.all([
+        isIntern ? extensionService.getMyExtensionRequests() : Promise.resolve([]),
+        canReview ? extensionService.getPendingExtensionRequests() : Promise.resolve([]),
+      ]);
+      setMyExtensionRequests(mine);
+      setPendingExtensions(pending);
+    } catch (err: any) {
+      setExtensionsError(
+        err?.response?.data?.message || 'Failed to load extension requests.',
+      );
+    } finally {
+      setExtensionsLoading(false);
+    }
+  }, [canReview, isIntern]);
+
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
@@ -138,10 +168,13 @@ export default function OffboardingPage() {
     void fetchLinks();
     if (canSubmit) void fetchEligibleTasks();
     if (isIntern) void fetchChecklistData();
+    if (isIntern || canReview) void fetchExtensionRequests();
   }, [
+    canReview,
     canSubmit,
     fetchChecklistData,
     fetchEligibleTasks,
+    fetchExtensionRequests,
     fetchLinks,
     isAuthenticated,
     isIntern,
@@ -213,6 +246,62 @@ export default function OffboardingPage() {
     }
   };
 
+  const handleSubmitExtension = async (additionalHours: number, reason: string) => {
+    setExtensionSubmitting(true);
+    setExtensionsError('');
+    try {
+      await extensionService.submitExtensionRequest({
+        additional_hours: additionalHours,
+        reason,
+      });
+      await fetchExtensionRequests();
+      pushToast('Extension request submitted ✓');
+    } catch (err: any) {
+      setExtensionsError(
+        err?.response?.data?.message || 'Failed to submit extension request.',
+      );
+    } finally {
+      setExtensionSubmitting(false);
+    }
+  };
+
+  const handleCancelExtension = async (requestId: string) => {
+    setExtensionReviewingId(requestId);
+    setExtensionsError('');
+    try {
+      await extensionService.cancelExtensionRequest(requestId);
+      await fetchExtensionRequests();
+      pushToast('Extension request cancelled');
+    } catch (err: any) {
+      setExtensionsError(
+        err?.response?.data?.message || 'Failed to cancel extension request.',
+      );
+    } finally {
+      setExtensionReviewingId(null);
+    }
+  };
+
+  const handleReviewExtension = async (
+    requestId: string,
+    status: 'approved' | 'rejected',
+    remarks?: string,
+  ) => {
+    if (!canReview) return;
+    setExtensionReviewingId(requestId);
+    setExtensionsError('');
+    try {
+      await extensionService.reviewExtensionRequest(requestId, { status, remarks });
+      await fetchExtensionRequests();
+      pushToast(status === 'approved' ? 'Extension approved ✓' : 'Extension rejected');
+    } catch (err: any) {
+      setExtensionsError(
+        err?.response?.data?.message || 'Failed to review extension request.',
+      );
+    } finally {
+      setExtensionReviewingId(null);
+    }
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <OffboardingDashboard
@@ -240,10 +329,20 @@ export default function OffboardingPage() {
       internProfile={internProfile}
       checklistLoading={checklistLoading}
       checklistError={checklistError}
+      // Extension Request data
+      myExtensionRequests={myExtensionRequests}
+      pendingExtensions={pendingExtensions}
+      extensionsLoading={extensionsLoading}
+      extensionsError={extensionsError}
+      extensionSubmitting={extensionSubmitting}
+      extensionReviewingId={extensionReviewingId}
       // Handlers
       onSubmit={handleSubmit}
       onReview={handleReview}
       onCopy={handleCopy}
+      onSubmitExtension={handleSubmitExtension}
+      onCancelExtension={handleCancelExtension}
+      onReviewExtension={handleReviewExtension}
     />
   );
 }

@@ -17,11 +17,13 @@ import { useState } from 'react';
 
 import type { OffboardingDriveLink, Task } from '../../types/task';
 import type { InternProfile } from '../../types/user';
+import type { ExtensionRequest } from '../../types/extension';
 import HubHeader from './components/HubHeader';
 import TabNav, { type TabDefinition } from './components/TabNav';
 import DriveLinkPanel from './components/DriveLinkPanel';
 import ReviewPanel from './components/ReviewPanel';
 import ExitChecklistPanel from './components/ExitChecklistPanel';
+import ExtensionRequestPanel from './components/ExtensionRequestPanel';
 
 // ── Toast type ─────────────────────────────────────────────────────────────
 
@@ -118,8 +120,8 @@ const ALL_TABS: TabConfig[] = [
   {
     id: 'extension-request',
     label: 'Extension Request',
-    implemented: false,
-    visibleTo: 'intern',
+    implemented: true,
+    visibleTo: 'all',
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -203,6 +205,14 @@ export interface OffboardingDashboardProps {
   checklistLoading: boolean;
   checklistError: string;
 
+  // Extension Request data
+  myExtensionRequests: ExtensionRequest[];
+  pendingExtensions: ExtensionRequest[];
+  extensionsLoading: boolean;
+  extensionsError: string;
+  extensionSubmitting: boolean;
+  extensionReviewingId: string | null;
+
   // Handlers
   onSubmit: (taskId: string, url: string, label?: string) => Promise<void>;
   onReview: (
@@ -211,6 +221,13 @@ export interface OffboardingDashboardProps {
     notes?: string,
   ) => Promise<void>;
   onCopy: (id: string, url: string) => Promise<void>;
+  onSubmitExtension: (additionalHours: number, reason: string) => Promise<void>;
+  onCancelExtension: (requestId: string) => Promise<void>;
+  onReviewExtension: (
+    requestId: string,
+    status: 'approved' | 'rejected',
+    remarks?: string,
+  ) => Promise<void>;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -237,9 +254,18 @@ export default function OffboardingDashboard({
   internProfile,
   checklistLoading,
   checklistError,
+  myExtensionRequests,
+  pendingExtensions,
+  extensionsLoading,
+  extensionsError,
+  extensionSubmitting,
+  extensionReviewingId,
   onSubmit,
   onReview,
   onCopy,
+  onSubmitExtension,
+  onCancelExtension,
+  onReviewExtension,
 }: OffboardingDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabId>('drive-links');
 
@@ -326,12 +352,26 @@ export default function OffboardingDashboard({
                 onNavigateToTab={(tabId) => setActiveTab(tabId)}
               />
             )}
+            {activeTab === 'extension-request' && (
+              <ExtensionRequestPanel
+                isIntern={isIntern}
+                canReview={canReview}
+                myRequests={myExtensionRequests}
+                pendingQueue={pendingExtensions}
+                loading={extensionsLoading}
+                error={extensionsError}
+                submitting={extensionSubmitting}
+                reviewingId={extensionReviewingId}
+                onSubmit={onSubmitExtension}
+                onCancel={onCancelExtension}
+                onReview={onReviewExtension}
+              />
+            )}
             {/*
              * Remaining panels are wired here as tabs are implemented.
              * They are not reachable yet because their tab buttons are disabled.
              *
              * activeTab === 'feedback-analytics'   → <FeedbackAnalyticsPanel />
-             * activeTab === 'extension-request'    → <ExtensionRequestPanel />
              * activeTab === 'clearance-timeline'   → <ClearanceTimelinePanel />
              * activeTab === 'readiness-score'      → <ReadinessScorePanel />
              * activeTab === 'alumni-profile'       → <AlumniProfilePanel />

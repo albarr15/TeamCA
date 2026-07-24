@@ -14,6 +14,18 @@ import {
   reviewDriveLinkSchema,
   listDriveLinksQuerySchema,
 } from "../schemas/taskSchemas.js";
+import {
+  createExtensionRequestHandler,
+  getMyExtensionRequestsHandler,
+  getPendingExtensionRequestsHandler,
+  reviewExtensionRequestHandler,
+  cancelExtensionRequestHandler,
+} from "../controllers/extensionController.js";
+import {
+  createExtensionRequestSchema,
+  reviewExtensionRequestSchema,
+  listExtensionRequestsQuerySchema,
+} from "../schemas/extensionSchemas.js";
 
 const router = Router();
 
@@ -46,6 +58,53 @@ router.patch(
   requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
   validateRequest({ body: reviewDriveLinkSchema }),
   reviewDriveLinkHandler,
+);
+
+// ---------------------------------------------------------------------------
+// Internship Extension Requests
+// ---------------------------------------------------------------------------
+
+// POST /offboarding/extension-requests
+// File a new extension request — for yourself, or (if you're a Head/
+// Supervisor/Admin/Superadmin) on behalf of an intern in your scope.
+router.post(
+  "/extension-requests",
+  validateRequest({ body: createExtensionRequestSchema }),
+  createExtensionRequestHandler,
+);
+
+// GET /offboarding/extension-requests/me
+// List the authenticated intern's own extension request history.
+router.get("/extension-requests/me", getMyExtensionRequestsHandler);
+
+// GET /offboarding/extension-requests/pending
+// List the reviewer's pending queue (Admins/Superadmins: all; Heads/
+// Supervisors: department-scoped). Supports ?departmentId= for admins.
+router.get(
+  "/extension-requests/pending",
+  requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
+  validateRequest({ query: listExtensionRequestsQuerySchema }),
+  getPendingExtensionRequestsHandler,
+);
+
+// PATCH /offboarding/extension-requests/:requestId/review
+// Approve or reject a pending extension request.
+// Body: { status: "approved" | "rejected", remarks?: string }
+// (remarks required when rejecting)
+router.patch(
+  "/extension-requests/:requestId/review",
+  requestLock,
+  requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
+  validateRequest({ body: reviewExtensionRequestSchema }),
+  reviewExtensionRequestHandler,
+);
+
+// PATCH /offboarding/extension-requests/:requestId/cancel
+// Cancel your own pending extension request (requester or target intern).
+router.patch(
+  "/extension-requests/:requestId/cancel",
+  requestLock,
+  cancelExtensionRequestHandler,
 );
 
 export default router;

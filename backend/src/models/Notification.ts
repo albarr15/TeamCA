@@ -31,6 +31,10 @@ export type NotificationEventType =
   | "leave_approved" // notifies the applicant when leave is approved
   | "leave_rejected" // notifies the applicant when leave is rejected
   | "leave_cancelled" // notifies admin/heads when a user cancels their leave
+  // ── NEW: internship extension request events ─────────────────────────────
+  | "extension_request_submitted" // notifies reviewers when a new request is filed
+  | "extension_request_approved" // notifies the intern when their request is approved
+  | "extension_request_rejected" // notifies the intern when their request is rejected
   // ── DTR reminder events ───────────────────────────────────────────────────
   | "dtr_clock_in_reminder"
   | "dtr_clock_out_reminder";
@@ -41,7 +45,7 @@ export interface INotification extends Document {
   event_type: NotificationEventType;
   title: string;
   message: string;
-  entity_type?: "task" | "user" | "leave";
+  entity_type?: "task" | "user" | "leave" | "extension_request";
   entity_id?: Types.ObjectId;
   metadata?: Record<string, unknown>;
   is_read: boolean;
@@ -87,6 +91,10 @@ const notificationSchema = new Schema<INotification>({
       "leave_approved",
       "leave_rejected",
       "leave_cancelled",
+      // extension requests (new)
+      "extension_request_submitted",
+      "extension_request_approved",
+      "extension_request_rejected",
       "dtr_clock_in_reminder",
       "dtr_clock_out_reminder",
     ],
@@ -95,7 +103,7 @@ const notificationSchema = new Schema<INotification>({
   },
   title: { type: String, required: true, trim: true, maxlength: 160 },
   message: { type: String, required: true, trim: true, maxlength: 500 },
-  entity_type: { type: String, enum: ["task", "user", "leave"] },
+  entity_type: { type: String, enum: ["task", "user", "leave", "extension_request"] },
   entity_id: { type: Schema.Types.ObjectId },
   metadata: { type: Schema.Types.Mixed },
   is_read: { type: Boolean, default: false, index: true },

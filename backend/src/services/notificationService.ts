@@ -6,7 +6,7 @@ import Notification, {
 import User from "../models/User.js";
 import type { INotificationPreferences } from "../models/User.js";
 
-type NotificationEntityType = "task" | "user" | "leave";
+type NotificationEntityType = "task" | "user" | "leave" | "extension_request";
 
 export type CreateNotificationInput = {
   recipientId: string;
