@@ -22,6 +22,7 @@ import OffboardingDashboard, { type ToastItem } from './OffboardingDashboard';
 
 export default function OffboardingPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isHydrated       = useAuthStore((state) => state.isHydrated);
   const currentUser     = useAuthStore((state) => state.user);
   const currentUserId   = String(
     currentUser?.user_id || (currentUser as any)?._id || '',
@@ -74,6 +75,18 @@ export default function OffboardingPage() {
     ? 'Reviewer'
     : 'Intern';
 
+  useEffect(() => {
+    console.info('[Offboarding] page state', {
+      path: window.location.pathname,
+      isHydrated,
+      isAuthenticated,
+      hasUser: Boolean(currentUser),
+      globalRole: currentUser?.global_role ?? null,
+      departmentRole: currentUser?.departments?.[0]?.department_role ?? null,
+      currentUserId: currentUserId || null,
+    });
+  }, [currentUser, currentUserId, isAuthenticated, isHydrated]);
+
   // ── Toast helper ─────────────────────────────────────────────────────────
   const pushToast = useCallback((message: string) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -96,6 +109,11 @@ export default function OffboardingPage() {
       const data = await taskService.getOffboardingDriveLinks();
       setLinks(data);
     } catch (err: any) {
+      console.error('[Offboarding] failed to load drive links', {
+        status: err?.response?.status,
+        message: err?.response?.data?.message ?? err?.message,
+        path: window.location.pathname,
+      });
       setError(
         err?.response?.data?.message || 'Failed to load deliverable links.',
       );
@@ -133,6 +151,10 @@ export default function OffboardingPage() {
       setAllTasks(tasks as Task[]);
       setInternProfile(profile);
     } catch (err: any) {
+      console.error('[Offboarding] failed to load exit checklist', {
+        status: err?.response?.status,
+        message: err?.response?.data?.message ?? err?.message,
+      });
       setChecklistError(
         err?.response?.data?.message || 'Failed to load exit requirements.',
       );
@@ -153,6 +175,10 @@ export default function OffboardingPage() {
       setMyExtensionRequests(mine);
       setPendingExtensions(pending);
     } catch (err: any) {
+      console.error('[Offboarding] failed to load extension requests', {
+        status: err?.response?.status,
+        message: err?.response?.data?.message ?? err?.message,
+      });
       setExtensionsError(
         err?.response?.data?.message || 'Failed to load extension requests.',
       );
@@ -182,10 +208,39 @@ export default function OffboardingPage() {
   ]);
 
   // ── Auth guard ───────────────────────────────────────────────────────────
-  if (!mounted) return null;
-  if (!isAuthenticated) {
-    window.location.replace('/login');
-    return null;
+  // Do not silently redirect when auth state is missing. A redirect hides
+  // hydration/profile issues and makes the page appear to jump to Dashboard.
+  if (!mounted || !isHydrated) return null;
+  if (!isAuthenticated || !currentUser) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-6">
+        <div className="w-full max-w-xl rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-widest text-rose-600">
+            Offboarding could not be loaded
+          </p>
+          <h1 className="mt-2 text-xl font-semibold text-slate-900">
+            Authentication state is unavailable
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            The app did not find a valid signed-in user for this page. No
+            redirect was performed so the problem can be diagnosed.
+          </p>
+          <div className="mt-4 rounded-xl border border-rose-200 bg-white p-4 text-left font-mono text-xs text-slate-600">
+            <div>path: {typeof window !== 'undefined' ? window.location.pathname : '/offboarding'}</div>
+            <div>authenticated: {String(isAuthenticated)}</div>
+            <div>user loaded: {String(Boolean(currentUser))}</div>
+            <div>global role: {currentUser?.global_role ?? 'missing'}</div>
+            <div>department role: {currentUser?.departments?.[0]?.department_role ?? 'missing'}</div>
+          </div>
+          <a
+            href="/login"
+            className="mt-5 inline-block rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-rose-700"
+          >
+            Sign in again
+          </a>
+        </div>
+      </div>
+    );
   }
 
   // ── Event handlers ───────────────────────────────────────────────────────

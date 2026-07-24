@@ -145,6 +145,7 @@ const NAV_ITEM_DEFS: NavItemDef[] = [
   { label: 'Tasks',       href: '/tasks',       icon: <TaskIcon /> },
   { label: 'Profile',     href: '/profile',     icon: <ProfileIcon /> },
   { label: 'Offboarding', href: '/offboarding', icon: <OffboardingIcon /> },
+  { label: 'Alumni',      href: '/alumni',      icon: <UsersIcon /> },
 
   // ── managers: Admin/Superadmin OR Head/Supervisor ───────────────────────────
   // Matches backend: requireAnyRole(["Superadmin","Admin"], ["Head","Supervisor"])
@@ -220,6 +221,17 @@ function NavLink({
   animClass: string;
   animStyle?: React.CSSProperties;
 }) {
+  const handleNavigation = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    console.info('[Sidebar navigation]', {
+      label: item.label,
+      target: item.href,
+      currentPath: window.location.pathname,
+      modifiedClick: event.metaKey || event.ctrlKey || event.shiftKey || event.altKey,
+      button: event.button,
+    });
+
+  };
+
   const base =
     'relative transition-colors ' +
     (isActive
@@ -231,6 +243,7 @@ function NavLink({
       <a
         href={item.href}
         title={item.label}
+        onClick={handleNavigation}
         className={`mx-2 mb-1 flex h-12 items-center justify-center rounded-xl ${base}`}
       >
         {isActive && (
@@ -244,6 +257,7 @@ function NavLink({
   return (
     <a
       href={item.href}
+      onClick={handleNavigation}
       className={`mx-2 mb-0.5 flex items-center gap-3 rounded-xl px-4 py-2.5 ${base} ${animClass}`}
       style={animStyle}
     >
@@ -261,6 +275,7 @@ function NavLink({
 export default function Sidebar() {
   const user              = useAuthStore((state) => state.user);
   const token             = useAuthStore((state) => state.token);
+  const isHydrated        = useAuthStore((state) => state.isHydrated);
   const setUser           = useAuthStore((state) => state.setUser);
   const logout            = useAuthStore((state) => state.logout);
   const getUserFullName   = useAuthStore((state) => state.getUserFullName);
@@ -305,9 +320,9 @@ export default function Sidebar() {
   }, [token]);
 
   React.useEffect(() => {
-    if (!mounted || !token || !currentUserId) return;
+    if (!mounted || !isHydrated || !token || !currentUserId) return;
     void refreshCurrentUser();
-  }, [mounted, token, currentUserId, refreshCurrentUser]);
+  }, [mounted, isHydrated, token, currentUserId, refreshCurrentUser]);
 
   React.useEffect(() => {
     if (!socket || !currentUserId) return;
@@ -380,7 +395,9 @@ export default function Sidebar() {
   const roleLabel = mounted && user
     ? user.global_role === 'Superadmin' ? 'Super Admin'
       : user.global_role === 'Admin'    ? 'Admin'
-      : user.departments?.[0]?.department_role ?? 'Intern'
+      : user.global_role === 'Standard_User'
+        ? user.departments?.[0]?.department_role ?? 'Intern'
+        : 'Role unavailable'
     : '';
 
   const animClass = shouldAnimate ? 'opacity-0 animate-fade-in' : '';

@@ -31,6 +31,8 @@ export const ROUTE_ACCESS_MAP: Record<string, RouteAccess> = {
   "/leave":     { label: "Leave" },
   "/tasks":     { label: "Tasks" },
   "/profile":   { label: "Profile" },
+  "/offboarding": { label: "Offboarding" },
+  "/alumni":    { label: "Alumni Directory" },
 
   // ── managers: global Admin/Superadmin OR department Head/Supervisor ──────────
   // Mirrors backend: requireAnyRole(["Superadmin","Admin"], ["Head","Supervisor"])

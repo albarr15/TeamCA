@@ -4,6 +4,7 @@ import DTR from "../models/DTR";
 import DTRSummary from "../models/DTRSummary";
 import User from "../models/User";
 import Leave from "../models/Leave";
+import InternProfile from "../models/InternProfile";
 import { emitUserDTRUpdated } from "../socket/io";
 import { syncRenderedHours } from "./internProfileService";
 
@@ -50,6 +51,17 @@ const isUserOnLeaveToday = async (userId: string): Promise<boolean> => {
   });
 
   return Boolean(leave);
+};
+
+const assertInternshipIsEditable = async (userId: string): Promise<void> => {
+  const profile = await User.findById(userId).select("_id").lean();
+  if (!profile) throw new Error("User not found");
+  const internProfile = await InternProfile.findOne({ user_id: userId })
+    .select("is_archived")
+    .lean();
+  if (internProfile?.is_archived) {
+    throw new Error("Archived internship records are read-only.");
+  }
 };
 
 /**
@@ -133,6 +145,7 @@ export const getActiveSession = async (userId: string) => {
  * TIME IN
  */
 export const timeIn = async (userId: string) => {
+  await assertInternshipIsEditable(userId);
   const today = getTodayPH();
   const now = new Date();
 
@@ -203,6 +216,7 @@ export const timeIn = async (userId: string) => {
  * TIME OUT (WITH REMARKS + OVERTIME)
  */
 export const timeOut = async (userId: string, remarks: string) => {
+  await assertInternshipIsEditable(userId);
   if (!remarks || remarks.trim().length === 0) {
     throw new Error("Remarks are required when clocking out");
   }
@@ -271,6 +285,7 @@ export const getMyDTR = async (userId: string) => {
  * START BREAK
  */
 export const startBreak = async (userId: string, breakType: "lunch" | "rest" | "other" = "rest") => {
+  await assertInternshipIsEditable(userId);
   const today = getTodayPH();
   const now = new Date();
   const dtr = await DTR.findOne({ userId, date: today });
@@ -300,6 +315,7 @@ export const startBreak = async (userId: string, breakType: "lunch" | "rest" | "
  * END BREAK
  */
 export const endBreak = async (userId: string) => {
+  await assertInternshipIsEditable(userId);
   const today = getTodayPH();
   const now = new Date();
   const dtr = await DTR.findOne({ userId, date: today });
@@ -344,6 +360,7 @@ const calculateTotalHours = (clock: any) => {
 export const updateDTRTotals = async (dtrId: string) => {
   const dtr = await DTR.findById(dtrId);
   if (!dtr) throw new Error("DTR record not found");
+  await assertInternshipIsEditable(String(dtr.userId));
 
   let totalHours = 0;
   dtr.clocks.forEach((clock) => { totalHours += calculateTotalHours(clock); });

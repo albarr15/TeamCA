@@ -180,6 +180,17 @@ export interface OffboardingDriveLink extends TaskWorkLink {
   task_title: string;
 }
 
+export interface OffboardingCandidate {
+  user_id: string;
+  name: string;
+  email: string;
+  completed_hours: number;
+  required_hours: number;
+  ready: boolean;
+  can_override_requirements: boolean;
+  blockers: string[];
+}
+
 export interface ReviewTaskWorkLinkPayload {
   /** Generic task work-link review — only approved/rejected (no revision flow). */
   status: "approved" | "rejected";

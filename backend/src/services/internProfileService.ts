@@ -37,7 +37,7 @@ export const syncRenderedHours = async (userId: string): Promise<void> => {
   const daysWorked = result[0]?.daysWorked ?? 0;
 
   await InternProfile.findOneAndUpdate(
-    { user_id: userId },
+    { user_id: userId, is_archived: { $ne: true } },
     { rendered_hours_total: renderedHours, days_worked: daysWorked },
   );
 };
@@ -69,6 +69,9 @@ export const updateInternProfileByUserId = async (
   const profile = await InternProfile.findOne({ user_id: userId });
   if (!profile) {
     throw new Error("Intern profile not found.");
+  }
+  if (profile.is_archived) {
+    throw new Error("Archived internship records are read-only.");
   }
 
   if (typeof payload.school_university !== "undefined") {

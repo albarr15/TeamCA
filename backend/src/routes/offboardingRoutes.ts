@@ -8,6 +8,8 @@ import {
   listOffboardingDriveLinksHandler,
   submitDriveLinkHandler,
   reviewDriveLinkHandler,
+  approveOffboardingHandler,
+  listOffboardingCandidatesHandler,
 } from "../controllers/offboardingController.js";
 import {
   addDriveLinkSchema,
@@ -39,6 +41,20 @@ router.get(
   "/drive-links",
   validateRequest({ query: listDriveLinksQuerySchema }),
   listOffboardingDriveLinksHandler,
+);
+
+// Reviewer queue and terminal approval. Approval validates the complete
+// internship exit requirements and automatically archives the intern.
+router.get(
+  "/candidates",
+  requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
+  listOffboardingCandidatesHandler,
+);
+router.post(
+  "/:userId/approve",
+  requestLock,
+  requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
+  approveOffboardingHandler,
 );
 
 // POST /offboarding/drive-links

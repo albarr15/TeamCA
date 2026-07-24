@@ -250,4 +250,16 @@ export const taskService = {
     );
     return response.data;
   },
+
+  getOffboardingCandidates: async (): Promise<import("../types/task").OffboardingCandidate[]> => {
+    const response = await api.get<import("../types/task").OffboardingCandidate[]>(
+      "/offboarding/candidates",
+      { headers: {} },
+    );
+    return response.data;
+  },
+
+  approveOffboarding: async (userId: string): Promise<void> => {
+    await api.post(`/offboarding/${userId}/approve`);
+  },
 };

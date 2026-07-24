@@ -39,6 +39,10 @@ export interface InternProfile {
   days_worked?: number;
   expected_completion_date?: string | null;
   actual_end_date?: Date;
+  is_archived?: boolean;
+  archived_at?: string | null;
+  archived_by?: string | null;
+  archive_override_reason?: string | null;
 }
 
 export interface DepartmentRoleCounts {
