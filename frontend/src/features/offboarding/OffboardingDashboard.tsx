@@ -22,6 +22,7 @@ import HubHeader from './components/HubHeader';
 import TabNav, { type TabDefinition } from './components/TabNav';
 import DriveLinkPanel from './components/DriveLinkPanel';
 import ReviewPanel from './components/ReviewPanel';
+import OffboardingApprovalPanel from './components/OffboardingApprovalPanel';
 import ExitChecklistPanel from './components/ExitChecklistPanel';
 import ExtensionRequestPanel from './components/ExtensionRequestPanel';
 
@@ -39,6 +40,7 @@ type TabId =
   | 'drive-links'
   | 'exit-checklist'
   | 'review-panel'
+  | 'offboarding-approvals'
   | 'feedback-analytics'
   | 'extension-request'
   | 'clearance-timeline'
@@ -100,6 +102,17 @@ const ALL_TABS: TabConfig[] = [
           strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
         />
+      </svg>
+    ),
+  },
+  {
+    id: 'offboarding-approvals',
+    label: 'Intern Approvals',
+    implemented: true,
+    visibleTo: 'reviewer',
+    icon: (
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
   },
@@ -341,6 +354,9 @@ export default function OffboardingDashboard({
             )}
             {activeTab === 'review-panel' && (
               <ReviewPanel />
+            )}
+            {activeTab === 'offboarding-approvals' && (
+              <OffboardingApprovalPanel />
             )}
             {activeTab === 'exit-checklist' && (
               <ExitChecklistPanel

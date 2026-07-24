@@ -35,6 +35,26 @@ const internProfileSchema = new Schema(
       type: Date,
       default: null,
     },
+    is_archived: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    archived_at: {
+      type: Date,
+      default: null,
+    },
+    archived_by: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    archive_override_reason: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+      default: null,
+    },
   },
   {
     timestamps: true,

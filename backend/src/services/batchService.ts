@@ -4,8 +4,14 @@ import BatchAssignment, {
   type BatchMemberStatus,
 } from "../models/BatchAssignment";
 import User from "../models/User";
+import InternProfile from "../models/InternProfile";
 
 const toObjectId = (id: string) => new Types.ObjectId(id);
+
+const assertUserInternshipEditable = async (userId: string) => {
+  const profile = await InternProfile.findOne({ user_id: userId }).select("is_archived").lean();
+  if (profile?.is_archived) throw new Error("Archived internship records are read-only.");
+};
 
 export type BatchEffectiveStatus = "Active" | "Completed";
 
@@ -229,6 +235,7 @@ export const updateBatchMember = async (
   userId: string,
   input: { status?: BatchMemberStatus; notes?: string },
 ) => {
+  await assertUserInternshipEditable(userId);
   const assignment = await BatchAssignment.findOne({
     batch_id: toObjectId(batchId),
     user_id: toObjectId(userId),
@@ -261,6 +268,8 @@ export const addBatchMembers = async (batchId: string, userIds: string[]) => {
   if (uniqueIds.length === 0) {
     throw new Error("At least one user_id is required.");
   }
+
+  await Promise.all(uniqueIds.map(assertUserInternshipEditable));
 
   await assertUsersAreInterns(uniqueIds);
 
@@ -304,6 +313,7 @@ export const addBatchMembers = async (batchId: string, userIds: string[]) => {
 };
 
 export const removeBatchMember = async (batchId: string, userId: string) => {
+  await assertUserInternshipEditable(userId);
   const result = await BatchAssignment.deleteOne({
     batch_id: toObjectId(batchId),
     user_id: toObjectId(userId),
@@ -337,6 +347,7 @@ export const getUserIdsInBatch = async (batchId: string): Promise<string[]> => {
 };
 
 export const assignUserToBatches = async (userId: string, batchIds: string[]) => {
+  await assertUserInternshipEditable(userId);
   const uniqueIds = [
     ...new Set(batchIds.map((id) => id.trim()).filter((id) => id.length > 0)),
   ];

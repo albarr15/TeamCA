@@ -1,5 +1,6 @@
 import TimeAdjustmentRequest from "../models/TimeAdjustmentRequest.js";
 import DTR from "../models/DTR.js";
+import InternProfile from "../models/InternProfile.js";
 import { emitUserDTRUpdated } from "../socket/io.js";
 import { updateDTRTotals } from "./dtrService.js";
 
@@ -12,6 +13,8 @@ export const timeAdjustmentService = {
     reason: string,
     originalValue?: string,
   ) {
+    const profile = await InternProfile.findOne({ user_id: userId }).select("is_archived").lean();
+    if (profile?.is_archived) throw new Error("Archived internship records are read-only.");
     // Find the DTR record for the given date
     const startOfDay = new Date(dtrDate);
     startOfDay.setHours(0, 0, 0, 0);
@@ -82,6 +85,13 @@ export const timeAdjustmentService = {
     reviewedBy: string,
     reviewNotes?: string,
   ) {
+    const pending = await TimeAdjustmentRequest.findById(requestId).lean();
+    if (!pending) {
+      throw new Error("Request not found");
+    }
+    const profile = await InternProfile.findOne({ user_id: pending.userId }).select("is_archived").lean();
+    if (profile?.is_archived) throw new Error("Archived internship records are read-only.");
+
     const request = await TimeAdjustmentRequest.findByIdAndUpdate(
       requestId,
       {

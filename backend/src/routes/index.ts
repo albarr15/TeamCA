@@ -13,6 +13,7 @@ import taskTemplateRoutes from "./taskTemplateRoutes.js";
 import batchRoutes from "./batchRoutes.js";
 import productivityRoutes from "./productivityRoutes.js";
 import offboardingRoutes from "./offboardingRoutes.js";
+import alumniRoutes from "./alumniRoutes.js";
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use("/task-templates", taskTemplateRoutes);
 router.use("/batches", batchRoutes);
 router.use("/productivity", productivityRoutes);
 router.use("/offboarding", offboardingRoutes);
+router.use("/alumni", alumniRoutes);
 
 export default router;

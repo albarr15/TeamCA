@@ -44,7 +44,13 @@ export const useAuthStore = create(
       setUser: (user) =>
         set((state) => ({
           ...state,
-          user,
+          // Profile refreshes can return a partial user shape. Preserve the
+          // authenticated user's existing role/id fields instead of replacing
+          // them with an incomplete response.
+          user: {
+            ...(state.user ?? {}),
+            ...user,
+          },
           isAuthenticated: Boolean(state.token && user),
         })),
 
