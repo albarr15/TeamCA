@@ -18,6 +18,35 @@ import User from "../models/User.js";
 import TaskWorkLink from "../models/TaskWorkLink.js";
 import { createNotificationsForRecipients } from "../services/notificationService.js";
 import { emitUsersNotification } from "../socket/io.js";
+import {
+  approveOffboarding,
+  listOffboardingCandidates,
+} from "../services/offboardingApprovalService.js";
+
+export const listOffboardingCandidatesHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Authentication required." });
+    return res.status(200).json(await listOffboardingCandidates(req.user));
+  } catch (error) {
+    return res.status(error instanceof Error && error.message.includes("permissions") ? 403 : 500)
+      .json({ message: error instanceof Error ? error.message : "Failed to load offboarding candidates." });
+  }
+};
+
+export const approveOffboardingHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Authentication required." });
+    const value = req.params.userId;
+    const userId = Array.isArray(value) ? value[0] : value;
+    if (!userId) return res.status(400).json({ message: "userId is required." });
+    return res.status(200).json(await approveOffboarding(req.user, userId));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to approve offboarding.";
+    const status = message.includes("permissions") ? 403 :
+      message.includes("not found") || message.includes("must be assigned") ? 404 : 400;
+    return res.status(status).json({ message });
+  }
+};
 
 // ---------------------------------------------------------------------------
 // GET /offboarding/drive-links

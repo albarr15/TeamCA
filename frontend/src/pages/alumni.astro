@@ -1,0 +1,8 @@
+---
+import DashboardLayout from "../layouts/DashboardLayout.astro";
+import AlumniPage from "../features/alumni/AlumniPage";
+---
+
+<DashboardLayout pageTitle="Alumni Directory" requiredAuthentication={true}>
+  <AlumniPage client:load />
+</DashboardLayout>

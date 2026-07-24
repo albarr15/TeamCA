@@ -13,6 +13,7 @@ import TaskWorkLink, {
   type DeliverablePlatform,
   type DeliverableStatus,
 } from "../models/TaskWorkLink.js";
+import InternProfile from "../models/InternProfile.js";
 import User, { type IUser } from "../models/User.js";
 import { getDeadlineState } from "./deadlineService.js";
 import { detectPlatform } from "../utils/deliverableUtils.js";
@@ -559,6 +560,13 @@ const resolveTaskOrThrow = async (taskId: string) => {
   return task;
 };
 
+const assertTaskInternshipsEditable = async (taskId: string) => {
+  const assignments = await TaskAssignment.find({ task_id: taskId }).select("assigned_to").lean();
+  const userIds = assignments.map((assignment) => assignment.assigned_to);
+  const archived = await InternProfile.exists({ user_id: { $in: userIds }, is_archived: true });
+  if (archived) throw new Error("Archived internship records are read-only.");
+};
+
 const getTaskAssigneeIdsMap = async (taskIds: string[]) => {
   const assignments = await TaskAssignment.find({
     task_id: { $in: taskIds },
@@ -702,6 +710,12 @@ export const createTaskWithAssignment = async (
 
   requireInternIncludesSelf(actor, assigneeUserIds);
 
+  const archivedAssignee = await InternProfile.exists({
+    user_id: { $in: assigneeUserIds },
+    is_archived: true,
+  });
+  if (archivedAssignee) throw new Error("Archived internship records are read-only.");
+
   await Promise.all(
     assigneeUserIds.map((assigneeUserId) =>
       assertCanAssign(actor, assigneeUserId),
@@ -747,6 +761,7 @@ export const assignTask = async (
   if (!task) {
     throw new Error("Task not found.");
   }
+  await assertTaskInternshipsEditable(input.taskId);
 
   const actorId = String(actor.user_id);
   if (
@@ -1156,6 +1171,7 @@ export const updateTaskStatus = async (
   if (!task) {
     throw new Error("Task not found.");
   }
+  await assertTaskInternshipsEditable(input.taskId);
 
   const canChange = await canChangeTaskStatus(actor, {
     _id: task._id as Types.ObjectId,
@@ -1242,6 +1258,7 @@ export const addTaskFeedback = async (
   if (!task) {
     throw new Error("Task not found.");
   }
+  await assertTaskInternshipsEditable(input.taskId);
 
   if (
     !canManageGlobally(actor.global_role) &&
@@ -1288,6 +1305,7 @@ export const addTaskWorkLink = async (
   if (!task) {
     throw new Error("Task not found.");
   }
+  await assertTaskInternshipsEditable(input.taskId);
 
   const hasAccess = await canAccessTaskScope(actor, {
     _id: task._id as Types.ObjectId,
@@ -1393,6 +1411,7 @@ export const deleteTaskWorkLink = async (
   if (!task) {
     throw new Error("Task not found.");
   }
+  await assertTaskInternshipsEditable(input.taskId);
 
   const hasAccess = await canAccessTaskScope(actor, {
     _id: task._id as Types.ObjectId,
@@ -1525,6 +1544,7 @@ export const addTaskComment = async (
   input: AddTaskCommentInput,
 ): Promise<TaskCommentItem> => {
   const task = await resolveTaskOrThrow(input.taskId);
+  await assertTaskInternshipsEditable(input.taskId);
 
   const hasAccess = await canAccessTaskScope(actor, {
     _id: task._id as Types.ObjectId,
@@ -1563,6 +1583,7 @@ export const updateTaskDetails = async (
   if (!task) {
     throw new Error("Task not found.");
   }
+  await assertTaskInternshipsEditable(input.taskId);
 
   if (
     !canManageOrOwnTask(actor, {
@@ -1603,6 +1624,7 @@ export const deleteTasks = async (
   if (uniqueTaskIds.length === 0) {
     throw new Error("At least one task id is required.");
   }
+  await Promise.all(uniqueTaskIds.map(assertTaskInternshipsEditable));
 
   const tasks = await Task.find({ _id: { $in: uniqueTaskIds } })
     .select("_id created_by status")
@@ -1780,6 +1802,7 @@ export const reviewTaskWorkLink = async (
   if (!task) {
     throw new Error("Task not found.");
   }
+  await assertTaskInternshipsEditable(input.taskId);
 
   const hasAccess = await canAccessTaskScope(actor, {
     _id: task._id as Types.ObjectId,
@@ -2003,4 +2026,3 @@ export const listDriveLinksForActor = async (
     task_title: taskTitleMap.get(String(link.task_id)) ?? "Unknown Task",
   }));
 };
-
