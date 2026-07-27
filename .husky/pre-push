@@ -2,5 +2,14 @@
 . "$(dirname "$0")/_/husky.sh"
 
 echo "Running lint before push..."
+pnpm -r lint || exit 1
 
-pnpm -r lint
+echo "Running frontend build check..."
+cd frontend
+pnpm run build || exit 1
+
+echo "Running frontend tests..."
+pnpm run test || exit 1
+cd ..
+
+echo "All pre-push checks passed! Proceeding with push..."
