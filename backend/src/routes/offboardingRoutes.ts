@@ -10,12 +10,15 @@ import {
   reviewDriveLinkHandler,
   approveOffboardingHandler,
   listOffboardingCandidatesHandler,
+  getMyClearanceTimelineHandler,
+  getClearanceTimelineHandler,
 } from "../controllers/offboardingController.js";
 import {
   addDriveLinkSchema,
   reviewDriveLinkSchema,
   listDriveLinksQuerySchema,
 } from "../schemas/taskSchemas.js";
+import { clearanceTimelineQuerySchema } from "../schemas/clearanceSchemas.js";
 import {
   createExtensionRequestHandler,
   getMyExtensionRequestsHandler,
@@ -121,6 +124,33 @@ router.patch(
   "/extension-requests/:requestId/cancel",
   requestLock,
   cancelExtensionRequestHandler,
+);
+
+// ---------------------------------------------------------------------------
+// Clearance Approval Timeline
+// ---------------------------------------------------------------------------
+// Unified, chronological history of every clearance action taken on an
+// intern's offboarding: deliverable reviews, extension request reviews, and
+// the terminal clearance approve/reject decision. Supports
+// ?status=rejected|revision_requested to filter down to only those actions.
+
+// GET /offboarding/clearance-timeline/me
+// The authenticated intern's own clearance timeline.
+router.get(
+  "/clearance-timeline/me",
+  validateRequest({ query: clearanceTimelineQuerySchema }),
+  getMyClearanceTimelineHandler,
+);
+
+// GET /offboarding/clearance-timeline/:userId
+// A reviewer's view of a specific intern's clearance timeline. Scoped to
+// Heads/Supervisors within their department, and unrestricted for
+// Admins/Superadmins (enforced in the service layer).
+router.get(
+  "/clearance-timeline/:userId",
+  requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
+  validateRequest({ query: clearanceTimelineQuerySchema }),
+  getClearanceTimelineHandler,
 );
 
 export default router;

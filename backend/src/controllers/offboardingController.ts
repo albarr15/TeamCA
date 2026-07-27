@@ -8,6 +8,7 @@ import type {
   ReviewDriveLinkPayload,
   ListDriveLinksQuery,
 } from "../schemas/taskSchemas.js";
+import type { ClearanceTimelineQuery } from "../schemas/clearanceSchemas.js";
 import {
   addTaskWorkLink,
   listDriveLinksForActor,
@@ -21,6 +22,7 @@ import { emitUsersNotification } from "../socket/io.js";
 import {
   approveOffboarding,
   listOffboardingCandidates,
+  getClearanceTimeline,
 } from "../services/offboardingApprovalService.js";
 
 export const listOffboardingCandidatesHandler = async (req: Request, res: Response) => {
@@ -232,5 +234,50 @@ export const reviewDriveLinkHandler = async (
     return res
       .status(500)
       .json({ message: "Failed to review drive link." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// GET /offboarding/clearance-timeline/me
+// Returns the authenticated intern's own clearance approval timeline.
+// ---------------------------------------------------------------------------
+
+export const getMyClearanceTimelineHandler = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Authentication required." });
+    const { status } = req.query as unknown as ClearanceTimelineQuery;
+    const timeline = await getClearanceTimeline(req.user, String(req.user.user_id), { status });
+    return res.status(200).json(timeline);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to load clearance timeline.";
+    return res.status(message.includes("permissions") ? 403 : 500).json({ message });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// GET /offboarding/clearance-timeline/:userId
+// Returns a specific intern's clearance approval timeline. Restricted to
+// reviewers (Head/Supervisor scoped to their department, Admin/Superadmin
+// unrestricted) via canManageIntern inside the service.
+// ---------------------------------------------------------------------------
+
+export const getClearanceTimelineHandler = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Authentication required." });
+    const value = req.params.userId;
+    const userId = Array.isArray(value) ? value[0] : value;
+    if (!userId) return res.status(400).json({ message: "userId is required." });
+    const { status } = req.query as unknown as ClearanceTimelineQuery;
+    const timeline = await getClearanceTimeline(req.user, userId, { status });
+    return res.status(200).json(timeline);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to load clearance timeline.";
+    return res.status(message.includes("permissions") ? 403 : 500).json({ message });
   }
 };

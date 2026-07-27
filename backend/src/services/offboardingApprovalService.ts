@@ -8,11 +8,21 @@ import Task from "../models/Task.js";
 import TaskAssignment from "../models/TaskAssignment.js";
 import TaskWorkLink from "../models/TaskWorkLink.js";
 import Batch from "../models/Batch.js";
+import ClearanceAction from "../models/ClearanceAction.js";
 import { archiveIntern, getAlumniProfile } from "./alumniService.js";
 
 type Actor = Express.AuthUser;
 
 const toObjectId = (id: string) => new Types.ObjectId(id);
+
+const resolveActorName = async (userId: string): Promise<string> => {
+  const user = await User.findById(userId)
+    .select("first_name last_name email")
+    .lean();
+  if (!user) return "Unknown user";
+  const name = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+  return name || user.email || "Unknown user";
+};
 
 const canManageIntern = async (actor: Actor, userId: string) => {
   if (actor.global_role === "Admin" || actor.global_role === "Superadmin") return true;
@@ -148,6 +158,9 @@ export const approveOffboarding = async (actor: Actor, userId: string) => {
     throw new Error("Only interns in a started, active batch can be offboarded.");
   }
 
+  const actorId = String(actor.user_id);
+  const actorName = await resolveActorName(actorId);
+
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -166,10 +179,168 @@ export const approveOffboarding = async (actor: Actor, userId: string) => {
       });
 
       await User.updateOne({ _id: toObjectId(userId) }, { $set: { is_active: false } }, { session });
+
+      await ClearanceAction.create(
+        [
+          {
+            intern_id: toObjectId(userId),
+            actor_id: toObjectId(actorId),
+            actor_name: actorName,
+            action: "approved",
+            notes: blockers.length > 0 ? "Approved with requirement overrides." : undefined,
+            timestamp: new Date(),
+          },
+        ],
+        { session },
+      );
     });
   } finally {
     await session.endSession();
   }
 
   return getAlumniProfile(userId);
+};
+
+// ---------------------------------------------------------------------------
+// Clearance Approval Timeline
+// ---------------------------------------------------------------------------
+// Aggregates every clearance-related action taken on an intern's offboarding
+// into a single chronological history:
+//   • Google Drive deliverable review actions (submit / approve / reject / revision)
+//   • Extension request actions (submit / approve / reject / cancel)
+//   • The terminal clearance decision itself (approve / reject)
+
+export type ClearanceTimelineCategory = "deliverable" | "extension" | "clearance";
+
+export type ClearanceTimelineEntry = {
+  id: string;
+  category: ClearanceTimelineCategory;
+  action: string;
+  actor_id: string;
+  actor_name: string;
+  notes: string | null;
+  context: string | null;
+  timestamp: Date;
+};
+
+export type ClearanceTimelineFilter = {
+  status?: "rejected" | "revision_requested";
+};
+
+const REJECTED_OR_REVISION_ACTIONS = new Set(["rejected", "revision_requested"]);
+
+export const getClearanceTimeline = async (
+  actor: Actor,
+  internId: string,
+  filter: ClearanceTimelineFilter = {},
+): Promise<ClearanceTimelineEntry[]> => {
+  const isSelf = String(actor.user_id) === internId;
+  if (!isSelf && !(await canManageIntern(actor, internId))) {
+    throw new Error("Insufficient permissions to view this intern's clearance timeline.");
+  }
+
+  const internObjectId = toObjectId(internId);
+
+  const [driveLinks, extensionRequests, clearanceActions] = await Promise.all([
+    TaskWorkLink.find({ submitted_by: internObjectId, platform: "drive" })
+      .select("task_id status review_notes reviewed_at reviewed_by created_at submitted_by")
+      .lean(),
+    ExtensionRequest.find({ intern_id: internObjectId })
+      .select("history")
+      .lean(),
+    ClearanceAction.find({ intern_id: internObjectId })
+      .select("actor_id actor_name action notes timestamp")
+      .lean(),
+  ]);
+
+  const taskIds = driveLinks.map((link) => link.task_id);
+  const tasks = taskIds.length
+    ? await Task.find({ _id: { $in: taskIds } }).select("title").lean()
+    : [];
+  const taskTitleMap = new Map(tasks.map((task) => [String(task._id), task.title]));
+
+  const reviewerIds = Array.from(
+    new Set(
+      driveLinks
+        .filter((link) => link.reviewed_by)
+        .map((link) => String(link.reviewed_by)),
+    ),
+  );
+  const reviewers = reviewerIds.length
+    ? await User.find({ _id: { $in: reviewerIds } }).select("first_name last_name email").lean()
+    : [];
+  const reviewerNameMap = new Map(
+    reviewers.map((user) => [
+      String(user._id),
+      `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email || "Unknown user",
+    ]),
+  );
+
+  const internName = await resolveActorName(internId);
+
+  const entries: ClearanceTimelineEntry[] = [];
+
+  for (const link of driveLinks) {
+    const taskTitle = taskTitleMap.get(String(link.task_id)) ?? null;
+
+    entries.push({
+      id: `deliverable-${link._id}-submitted`,
+      category: "deliverable",
+      action: "submitted",
+      actor_id: internId,
+      actor_name: internName,
+      notes: null,
+      context: taskTitle,
+      timestamp: (link as any).created_at,
+    });
+
+    if (link.status !== "pending_review" && link.reviewed_by && link.reviewed_at) {
+      entries.push({
+        id: `deliverable-${link._id}-${link.status}`,
+        category: "deliverable",
+        action: link.status,
+        actor_id: String(link.reviewed_by),
+        actor_name: reviewerNameMap.get(String(link.reviewed_by)) ?? "Unknown user",
+        notes: link.review_notes ?? null,
+        context: taskTitle,
+        timestamp: link.reviewed_at,
+      });
+    }
+  }
+
+  for (const request of extensionRequests) {
+    for (const historyEntry of request.history || []) {
+      entries.push({
+        id: `extension-${request._id}-${historyEntry.action}-${new Date(historyEntry.timestamp).getTime()}`,
+        category: "extension",
+        action: historyEntry.action,
+        actor_id: String(historyEntry.actor_id),
+        actor_name: historyEntry.actor_name,
+        notes: historyEntry.remarks ?? null,
+        context: "Extension Request",
+        timestamp: historyEntry.timestamp,
+      });
+    }
+  }
+
+  for (const clearanceAction of clearanceActions) {
+    entries.push({
+      id: `clearance-${clearanceAction._id}`,
+      category: "clearance",
+      action: clearanceAction.action,
+      actor_id: String(clearanceAction.actor_id),
+      actor_name: clearanceAction.actor_name,
+      notes: clearanceAction.notes ?? null,
+      context: "Offboarding Clearance",
+      timestamp: clearanceAction.timestamp,
+    });
+  }
+
+  entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  if (filter.status && REJECTED_OR_REVISION_ACTIONS.has(filter.status)) {
+    return entries.filter((entry) => entry.action === filter.status);
+  }
+
+  return entries;
 };
