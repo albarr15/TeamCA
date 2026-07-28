@@ -8,7 +8,7 @@ export default defineConfig({
   integrations: [react(), tailwind()],
   output: "static",
   server: {
-    port: 4322,
+    port: 4321,
   },
   vite: {
     server: {

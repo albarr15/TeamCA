@@ -23,6 +23,9 @@ import ClockHistoryCard from '../../components/widgets/ClockHistoryCard';
 import { productivityService } from '../../services/productivityService';
 import type { ProductivitySummary } from '../../types/productivity';
 import { useTaskListSocket } from '../../hooks/useTaskListSocket';
+import ReadinessScoreCard from '../offboarding/components/ReadinessScoreCard';
+import { readinessService } from '../../services/readinessService';
+import type { ReadinessBreakdown } from '../../types/readiness';
 
 export default function InternDashboard() {
   const user = useAuthStore((state) => state.user);
@@ -45,6 +48,8 @@ export default function InternDashboard() {
   const [clockOutError, setClockOutError] = React.useState<string | null>(null);
   const [productivity, setProductivity] = React.useState<ProductivitySummary | null>(null);
   const [productivityLoading, setProductivityLoading] = React.useState(true);
+  const [readiness, setReadiness] = React.useState<ReadinessBreakdown | null>(null);
+  const [readinessLoading, setReadinessLoading] = React.useState(true);
 
   // Active session's clock-in timestamp — used by the hero for context-aware
   // messaging (e.g. "you've been clocked in for 3h, consider a break").
@@ -69,6 +74,15 @@ export default function InternDashboard() {
   React.useEffect(() => {
     refreshProductivity();
   }, [refreshProductivity]);
+
+  React.useEffect(() => {
+    setReadinessLoading(true);
+    readinessService
+      .getMine()
+      .then((data) => setReadiness(data))
+      .catch(() => setReadiness(null))
+      .finally(() => setReadinessLoading(false));
+  }, []);
 
   useTaskListSocket(refreshProductivity);
 
@@ -248,6 +262,15 @@ export default function InternDashboard() {
                 renderedHours={internProfile?.rendered_hours_total}
                 workingHours={user?.working_hours}
               />
+            )}
+          </Card>
+          <Card title="Internship readiness" subtitle="Overall completion progress">
+            {readinessLoading ? (
+              <WidgetSkeleton lines={5} />
+            ) : readiness ? (
+              <ReadinessScoreCard data={readiness} />
+            ) : (
+              <p className="text-sm text-gray-500">Unable to load readiness score.</p>
             )}
           </Card>
         </div>

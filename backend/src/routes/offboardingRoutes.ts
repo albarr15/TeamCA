@@ -12,6 +12,8 @@ import {
   listOffboardingCandidatesHandler,
   getMyClearanceTimelineHandler,
   getClearanceTimelineHandler,
+  getMyReadinessScoreHandler,
+  getReadinessScoreHandler,
 } from "../controllers/offboardingController.js";
 import {
   addDriveLinkSchema,
@@ -58,6 +60,25 @@ router.post(
   requestLock,
   requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
   approveOffboardingHandler,
+);
+
+// ---------------------------------------------------------------------------
+// Internship Completion Readiness Score
+// ---------------------------------------------------------------------------
+// Weighted progress percentage (hours, tasks, attendance, deliverables)
+// shown on the intern dashboard. Distinct from the strict pass/fail gate
+// used by /:userId/approve above.
+
+// GET /offboarding/readiness-score/me
+// The authenticated intern's own readiness score.
+router.get("/readiness-score/me", getMyReadinessScoreHandler);
+
+// GET /offboarding/readiness-score/:userId
+// A reviewer's view of a specific intern's readiness score.
+router.get(
+  "/readiness-score/:userId",
+  requireAnyRole(["Superadmin", "Admin"], ["Head", "Supervisor"]),
+  getReadinessScoreHandler,
 );
 
 // POST /offboarding/drive-links
