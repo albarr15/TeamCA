@@ -30,6 +30,15 @@ export default defineConfig({
             },
           ],
         },
+        // NEW SECTION ADDED HERE
+        {
+          label: "Quality Assurance",
+          collapsed: false,
+          items: [
+            { label: "Smoke Tests", slug: "qa/smoke-tests" },
+          ],
+        },
+        // END OF NEW SECTION
         {
           label: "Architecture",
           collapsed: true,
@@ -95,7 +104,6 @@ export default defineConfig({
           ],
         },
       ],
-      favicon: "/favicon.ico",
       customCss: ["./src/styles/custom.css"],
       editLink: {
         baseUrl:
