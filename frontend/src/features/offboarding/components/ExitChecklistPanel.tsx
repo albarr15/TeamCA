@@ -14,6 +14,7 @@
 import { buildExitRequirements } from '../utils/exitRequirements';
 import type { ExitRequirementsInput } from '../utils/exitRequirements';
 import RequirementStatusChip from './RequirementStatusChip';
+import ExitSurveyForm from './ExitSurveyForm';
 
 export interface ExitChecklistPanelProps extends ExitRequirementsInput {
   loading: boolean;
@@ -126,6 +127,19 @@ export default function ExitChecklistPanel({
           );
         })}
       </div>
+      {/* ── Exit Survey ───────────────────────────────────────────────
+          Shown once the visible checklist looks complete. ExitSurveyForm
+          re-checks eligibility against the authoritative server-side gate
+          (offboardingApprovalService.getReadiness()) on its own, so even if
+          buildExitRequirements' client-side calc is slightly optimistic or
+          doesn't cover every server-side check (e.g. evaluation completion,
+          pending extensions), the form will still show the correct blocked
+          state rather than letting someone submit early. */}
+      {allComplete && (
+        <div className="pt-2">
+          <ExitSurveyForm />
+        </div>
+      )}
     </div>
   );
 }
