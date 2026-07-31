@@ -1,0 +1,38 @@
+---
+// frontend/src/pages/verify/[code].astro
+export const prerender = false;
+
+//
+// PUBLIC PAGE — reachable by anyone, no login required. This is what a QR
+// code on an issued certificate points to, and what an employer/school
+// would visit directly with a code someone gave them.
+//
+// ASSUMPTION: I don't have visibility into this project's existing
+// pages/ directory or layout conventions (e.g. whether there's a shared
+// public Layout.astro distinct from the logged-in app shell). This page is
+// written standalone, with no imported layout, so it doesn't accidentally
+// pull in the authenticated app's nav/sidebar. If you do have a plain
+// public-facing layout already (e.g. used by a login or landing page),
+// tell me its path and I'll wrap this page with it instead for consistent
+// branding/fonts.
+
+import CertificateVerificationResult from "../../features/verify/CertificateVerificationResult";
+
+const { code } = Astro.params;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Certificate Verification — TeamCA</title>
+  </head>
+  <body class="min-h-screen bg-slate-50 px-4 py-12">
+    <div class="mx-auto max-w-lg">
+      <h1 class="mb-6 text-center text-xl font-semibold text-slate-800">
+        Certificate Verification
+      </h1>
+      <CertificateVerificationResult code={code as string} client:load />
+    </div>
+  </body>
+</html>

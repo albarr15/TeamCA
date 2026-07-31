@@ -14,6 +14,8 @@ import batchRoutes from "./batchRoutes.js";
 import productivityRoutes from "./productivityRoutes.js";
 import offboardingRoutes from "./offboardingRoutes.js";
 import alumniRoutes from "./alumniRoutes.js";
+import certificateRoutes from "./certificateRoutes.js";
+import certificateVerificationRoutes from "./certificateVerificationRoutes.js";
 
 const router = Router();
 
@@ -32,5 +34,8 @@ router.use("/batches", batchRoutes);
 router.use("/productivity", productivityRoutes);
 router.use("/offboarding", offboardingRoutes);
 router.use("/alumni", alumniRoutes);
+router.use("/certificates", certificateRoutes);
+// Public — no auth. Reachable at /api/verify/:code and /api/verify/:code/qr.
+router.use("/verify", certificateVerificationRoutes);
 
-export default router;
+export default router;  
