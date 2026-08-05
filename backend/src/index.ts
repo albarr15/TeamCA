@@ -11,6 +11,7 @@ import { initTaskSocket } from "./socket/io.js";
 import { startReminderScheduler } from "./services/schedulerService.js";
 import routes from "./routes/index.js";
 import { scheduleDeadlineSweep } from "./utils/scheduler.js";
+import { globalErrorHandler } from "./middlewares/errorHandler.js"; // <-- Imported here
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -116,6 +117,16 @@ app.use("/api", _apiLimiter, routes);
 app.get("/health", (_req, res) =>
   res.json({ status: "ok", timestamp: new Date().toISOString() }),
 );
+
+// ── 404 Handler (Catch-all for undefined routes) ──
+app.use((req, res, next) => {
+  const error = new Error(`Route Not Found - ${req.originalUrl}`);
+  res.status(404);
+  next(error);
+});
+
+// ── Global Error Handler ──
+app.use(globalErrorHandler);
 
 const server = http.createServer(app);
 initTaskSocket(server, allowedOrigins);
