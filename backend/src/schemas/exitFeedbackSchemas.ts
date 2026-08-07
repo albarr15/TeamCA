@@ -3,7 +3,7 @@
 // actually uses Joi or something else, the shape below translates directly
 // but the import and builder syntax will need to change.
 import { z } from "zod";
-import { FEEDBACK_THEMES } from "../models/ExitSurvey.js";
+import { FEEDBACK_THEMES } from "../models/exitSurvey.js";
 
 // ── Question management (admin) ─────────────────────────────────────────
 

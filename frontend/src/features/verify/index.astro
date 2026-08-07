@@ -1,11 +1,17 @@
 ---
-// frontend/src/pages/verify/[code].astro
-export const prerender = false;
-
+// frontend/src/pages/verify/index.astro
 //
 // PUBLIC PAGE — reachable by anyone, no login required. This is what a QR
-// code on an issued certificate points to, and what an employer/school
-// would visit directly with a code someone gave them.
+// code on an issued certificate points to (/verify/<code>), and what an
+// employer/school would visit directly with a code someone gave them.
+//
+// This is intentionally a static, non-dynamic page (no [code] route, no
+// getStaticPaths). The whole app is built with `output: "static"` and
+// served by plain nginx — there's no Node process at runtime to render a
+// dynamic route per-code. Instead, nginx is configured (see nginx.conf) to
+// serve this same file for ANY path under /verify/, and the code itself is
+// read out of the URL client-side inside CertificateVerificationResult,
+// which then calls the public verify API directly from the browser.
 //
 // ASSUMPTION: I don't have visibility into this project's existing
 // pages/ directory or layout conventions (e.g. whether there's a shared
@@ -17,8 +23,6 @@ export const prerender = false;
 // branding/fonts.
 
 import CertificateVerificationResult from "../../features/verify/CertificateVerificationResult";
-
-const { code } = Astro.params;
 ---
 
 <html lang="en">
@@ -32,7 +36,7 @@ const { code } = Astro.params;
       <h1 class="mb-6 text-center text-xl font-semibold text-slate-800">
         Certificate Verification
       </h1>
-      <CertificateVerificationResult code={code as string} client:load />
+      <CertificateVerificationResult client:load />
     </div>
   </body>
 </html>

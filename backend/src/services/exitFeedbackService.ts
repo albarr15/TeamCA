@@ -5,7 +5,7 @@ import ExitSurvey, {
   FEEDBACK_THEMES,
   type FeedbackTheme,
   type ExitSurveyCustomAnswer,
-} from "../models/ExitSurvey.js";
+} from "../models/exitSurvey.js";
 import ExitSurveyQuestion, {
   type ExitSurveyQuestionType,
 } from "../models/ExitSurveyQuestion.js";

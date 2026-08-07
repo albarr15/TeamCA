@@ -1,9 +1,14 @@
 // frontend/src/features/verify/CertificateVerificationResult.tsx
 //
-// Public-facing component — rendered on frontend/src/pages/verify/[code].astro.
+// Public-facing component — rendered on frontend/src/pages/verify/index.astro,
+// which is served (via nginx, see nginx.conf) for ANY path under /verify/.
 // No authentication, no app shell/nav — this is meant to be reachable by
 // anyone with a certificate's code or QR (employers, schools), completely
 // outside the logged-in Offboarding Hub.
+//
+// Since the page itself is static (no per-code server render), the code is
+// read directly out of the browser URL: a QR/link to /verify/<code> serves
+// this same static file, and the last path segment is the code.
 //
 // Calls certificateService.verifyCertificate, which hits the public
 // backend endpoint (GET /api/verify/:code) — no auth token required or sent.
@@ -12,13 +17,40 @@ import { useEffect, useState } from "react";
 import { verifyCertificate } from "../../services/certificateService";
 import type { PublicVerificationResult } from "../../types/certificate";
 
-export default function CertificateVerificationResult({ code }: { code: string }) {
+// Extracts the code from a path like /verify/ABC123 or /verify/ABC123/.
+// Falls back to "" (which the caller treats as "no code / not found") if
+// this is somehow loaded at exactly /verify with nothing after it.
+function getCodeFromPath(): string {
+  const segments = window.location.pathname.split("/").filter(Boolean); // ["verify", "ABC123"]
+  const last = segments[segments.length - 1];
+  if (!last || last.toLowerCase() === "verify") return "";
+  return decodeURIComponent(last);
+}
+
+export default function CertificateVerificationResult() {
+  const [code, setCode] = useState<string | null>(null);
   const [result, setResult] = useState<PublicVerificationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Read the code once we're in the browser (Astro's client:load hydration
+  // still runs this component through an SSR-safe pass first, so
+  // window.location isn't touched until the effect).
   useEffect(() => {
+    setCode(getCodeFromPath());
+  }, []);
+
+  useEffect(() => {
+    if (code === null) return; // haven't read the URL yet
+    if (code === "") {
+      setError(true);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
+    setLoading(true);
+    setError(false);
     verifyCertificate(code)
       .then((r) => {
         if (!cancelled) setResult(r);
