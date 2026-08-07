@@ -112,13 +112,31 @@ const computeAttendance = (timeIn: Date) => {
 };
 
 /**
+ * Find the DTR record that actually holds the user's open clock-in, if any.
+ * An open session can belong to a *previous* calendar day when the user
+ * forgot to clock out / end their break before midnight. Restricting the
+ * lookup to "today" causes clock-out and end-break to 400 the next day
+ * because the record they need to update isn't today's — it's yesterday's.
+ */
+const findOpenDTR = async (userId: string) => {
+  const dtr = await DTR.findOne(
+    { userId, clocks: { $elemMatch: { timeIn: { $exists: true }, timeOut: { $exists: false } } } },
+    null,
+    { sort: { date: -1 } },
+  );
+  if (!dtr || dtr.clocks.length === 0) return null;
+  const lastClock = dtr.clocks[dtr.clocks.length - 1];
+  if (lastClock.timeIn && !lastClock.timeOut) return dtr;
+  return null;
+};
+
+/**
  * CHECK ACTIVE SESSION
  * Returns the current active DTR session for a user (if any).
  * Used by the frontend on reconnect/refresh to recover state.
  */
 export const getActiveSession = async (userId: string) => {
-  const today = getTodayPH();
-  const dtr = await DTR.findOne({ userId, date: today });
+  const dtr = await findOpenDTR(userId);
 
   if (!dtr || dtr.clocks.length === 0) {
     return { hasActiveSession: false, dtr: null };
@@ -227,8 +245,7 @@ export const timeOut = async (userId: string, remarks: string) => {
     throw new Error("You cannot clock out on an approved leave day.");
   }
 
-  const today = getTodayPH();
-  const dtr = await DTR.findOne({ userId, date: today });
+  const dtr = await findOpenDTR(userId);
 
   if (!dtr || dtr.clocks.length === 0) throw new Error("No clock-in found for today");
 
@@ -286,9 +303,8 @@ export const getMyDTR = async (userId: string) => {
  */
 export const startBreak = async (userId: string, breakType: "lunch" | "rest" | "other" = "rest") => {
   await assertInternshipIsEditable(userId);
-  const today = getTodayPH();
   const now = new Date();
-  const dtr = await DTR.findOne({ userId, date: today });
+  const dtr = await findOpenDTR(userId);
 
   if (!dtr || dtr.clocks.length === 0) throw new Error("No active clock-in found");
 
@@ -316,9 +332,8 @@ export const startBreak = async (userId: string, breakType: "lunch" | "rest" | "
  */
 export const endBreak = async (userId: string) => {
   await assertInternshipIsEditable(userId);
-  const today = getTodayPH();
   const now = new Date();
-  const dtr = await DTR.findOne({ userId, date: today });
+  const dtr = await findOpenDTR(userId);
 
   if (!dtr || dtr.clocks.length === 0) throw new Error("No active clock-in found");
 

@@ -20,8 +20,7 @@ The repo is an npm workspaces monorepo with four packages:
 ## Setup
 
 ```bash
-git clone https://github.com/<org>/teamca.git
-cd teamca
+git clone https://github.com/JorellAndreiFinez/teamca.git
 npm install
 ```
 
@@ -33,7 +32,7 @@ Create `backend/.env`:
 
 ```env
 PORT=3000
-MONGO_URI=mongodb://localhost:27017/teamca
+MONGODB_URI=mongodb://localhost:27017/teamca
 JWT_SECRET=replace-with-a-long-random-string
 FRONTEND_URL=http://localhost:4321
 CORS_ORIGINS=http://localhost:4321
@@ -45,6 +44,22 @@ Create `frontend/.env`:
 ```env
 PUBLIC_BACKEND_URL=http://localhost:3000
 ```
+
+#### Variable Documentation
+
+**Backend (`backend/.env`)**
+*   **Required (All Environments):** 
+    *   `MONGODB_URI`: Database connection string.
+*   **Required (Production Only):**
+    *   `JWT_SECRET`: Secure string for signing auth tokens. The app will exit on startup if missing in production.
+    *   `FRONTEND_URL` & `CORS_ORIGINS`: Required in production for custom domains. (Local development automatically allows `localhost:4321`).
+*   **Optional:** 
+    *   `PORT`: Backend server port (defaults to `3000`).
+    *   `NODE_ENV`: Environment mode (defaults to `development`).
+
+**Frontend (`frontend/.env`)**
+*   **Required:** 
+    *   `PUBLIC_BACKEND_URL`: The base URL connecting to the backend API.
 
 ## Running locally
 

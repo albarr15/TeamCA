@@ -29,6 +29,17 @@ services:
     networks:
       - teamca-net
 
+  website:
+    build:
+      context: ./website
+      dockerfile: Dockerfile
+    container_name: teamca-website
+    restart: unless-stopped
+    ports:
+      - "4322:4322"
+    networks:
+      - teamca-net
+
 networks:
   teamca-net:
     driver: bridge

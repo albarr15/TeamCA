@@ -5,13 +5,19 @@ import { dtrService } from "../services/dtrService";
 const getActiveClock = (records: DailyTimeRecord[]) => {
   if (!records.length) return undefined;
 
-  // Only check the most recent (today's) DTR record for open clocks
-  // This prevents picking up stale unclosed entries from past days
-  const today = records.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  )[0];
+  // An open clock (forgotten clock-out / break) can live on a record from a
+  // previous day, not just the most recent one. Scan all records — sorted
+  // newest first — for the first one that still has an open clock, instead
+  // of assuming it's always "today's" record.
+  const sorted = records
+    .slice()
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  return today?.clocks?.find((clock) => clock.timeIn && !clock.timeOut);
+  for (const record of sorted) {
+    const openClock = record?.clocks?.find((clock) => clock.timeIn && !clock.timeOut);
+    if (openClock) return openClock;
+  }
+  return undefined;
 };
 
 const syncFlagsFromRecords = (records: DailyTimeRecord[]) => {

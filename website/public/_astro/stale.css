@@ -1,0 +1,7 @@
+/*
+ * Fallback for a CSS hash from an older static build.
+ *
+ * The real, current page styles are loaded separately. This file prevents an
+ * old browser tab from receiving a 404 after Docker replaces the previous
+ * build's hashed Astro assets.
+ */
