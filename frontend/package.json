@@ -17,6 +17,7 @@
     "prepare": "node -e \"if (!process.env.CI && !process.env.VERCEL) require('child_process').execSync('husky', {stdio:'inherit'})\""
   },
   "dependencies": {
+    "@astrojs/node": "^8.3.4",
     "@astrojs/react": "^5.0.2",
     "@astrojs/tailwind": "^5.0.0",
     "@radix-ui/react-dialog": "^1.1.15",

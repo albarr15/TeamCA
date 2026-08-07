@@ -52,7 +52,7 @@ const actionableBlockers = (readiness: OffboardingReadiness, actor: Actor) =>
     ? []
     : readiness.blockers;
 
-const getReadiness = async (userId: string): Promise<OffboardingReadiness> => {
+export const getReadiness = async (userId: string): Promise<OffboardingReadiness> => {
   const userObjectId = toObjectId(userId);
   const [profile, assignments, evaluationCount, pendingExtension, driveLinks] = await Promise.all([
     InternProfile.findOne({ user_id: userObjectId }).lean(),

@@ -24,6 +24,7 @@ import {
   listOffboardingCandidates,
   getClearanceTimeline,
 } from "../services/offboardingApprovalService.js";
+import { getReadinessScore } from "../services/readinessScoreService.js";
 
 export const listOffboardingCandidatesHandler = async (req: Request, res: Response) => {
   try {
@@ -279,5 +280,46 @@ export const getClearanceTimelineHandler = async (
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load clearance timeline.";
     return res.status(message.includes("permissions") ? 403 : 500).json({ message });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// GET /offboarding/readiness-score/me
+// Returns the authenticated intern's own Internship Completion Readiness
+// Score — a weighted percentage (hours, tasks, attendance, deliverables)
+// used to display progress on the intern dashboard. This is separate from
+// the strict all-or-nothing gate enforced in offboardingApprovalService's
+// getReadiness()/approveOffboarding().
+// ---------------------------------------------------------------------------
+
+export const getMyReadinessScoreHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Authentication required." });
+    const score = await getReadinessScore(String(req.user.user_id));
+    return res.status(200).json(score);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to compute readiness score.";
+    return res.status(message.includes("not found") ? 404 : 500).json({ message });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// GET /offboarding/readiness-score/:userId
+// Returns a specific intern's Readiness Score. Restricted to reviewers
+// (Head/Supervisor/Admin/Superadmin), matching the access pattern used for
+// candidates/clearance-timeline elsewhere in this controller.
+// ---------------------------------------------------------------------------
+
+export const getReadinessScoreHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Authentication required." });
+    const value = req.params.userId;
+    const userId = Array.isArray(value) ? value[0] : value;
+    if (!userId) return res.status(400).json({ message: "userId is required." });
+    const score = await getReadinessScore(userId);
+    return res.status(200).json(score);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to compute readiness score.";
+    return res.status(message.includes("not found") ? 404 : 500).json({ message });
   }
 };

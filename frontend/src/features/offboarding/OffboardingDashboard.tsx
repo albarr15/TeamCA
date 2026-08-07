@@ -26,6 +26,8 @@ import OffboardingApprovalPanel from './components/OffboardingApprovalPanel';
 import ExitChecklistPanel from './components/ExitChecklistPanel';
 import ExtensionRequestPanel from './components/ExtensionRequestPanel';
 import ClearanceTimelinePanel from './components/ClearanceTimelinePanel';
+import ReadinessScorePanel from './components/ReadinessScorePanel';
+import FeedbackAnalyticsPanel from './components/FeedbackAnalyticsPanel';
 
 // ── Toast type ─────────────────────────────────────────────────────────────
 
@@ -120,7 +122,7 @@ const ALL_TABS: TabConfig[] = [
   {
     id: 'feedback-analytics',
     label: 'Feedback Analytics',
-    implemented: false,
+    implemented: true,
     visibleTo: 'admin',
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -162,7 +164,7 @@ const ALL_TABS: TabConfig[] = [
   {
     id: 'readiness-score',
     label: 'Readiness Score',
-    implemented: false,
+    implemented: true,
     visibleTo: 'all',
     icon: (
       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -391,12 +393,20 @@ export default function OffboardingDashboard({
                 currentUserId={currentUserId}
               />
             )}
+            {activeTab === 'readiness-score' && (
+              <ReadinessScorePanel
+                isIntern={isIntern}
+                canReview={canReview}
+                currentUserId={currentUserId}
+              />
+            )}
+            {activeTab === 'feedback-analytics' && (
+              <FeedbackAnalyticsPanel />
+            )}
             {/*
              * Remaining panels are wired here as tabs are implemented.
              * They are not reachable yet because their tab buttons are disabled.
              *
-             * activeTab === 'feedback-analytics'   → <FeedbackAnalyticsPanel />
-             * activeTab === 'readiness-score'      → <ReadinessScorePanel />
              * activeTab === 'alumni-profile'       → <AlumniProfilePanel />
              */}
           </div>
