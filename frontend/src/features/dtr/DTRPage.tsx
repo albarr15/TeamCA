@@ -89,11 +89,18 @@ export default function DTRPage() {
   const activeClock = React.useMemo(() => {
     if (!records.length) return undefined;
 
-    const today = records.sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0];
+    // Open clocks can belong to a previous day's record (forgotten clock-out
+    // or break). Scan all records, newest first, instead of only checking
+    // the most recent one.
+    const sorted = records
+      .slice()
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return today?.clocks?.find((c) => c.timeIn && !c.timeOut);
+    for (const record of sorted) {
+      const openClock = record?.clocks?.find((c) => c.timeIn && !c.timeOut);
+      if (openClock) return openClock;
+    }
+    return undefined;
   }, [records]);
 
   const clockInTime = activeClock?.timeIn ? new Date(activeClock.timeIn) : null;
