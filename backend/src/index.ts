@@ -29,9 +29,10 @@ app.disable("x-powered-by");
 const normalizeOrigin = (origin: string): string => origin.replace(/\/+$/, "");
 
 const defaultOrigins = [
-  "http://localhost:4321",
-  "http://127.0.0.1:4321",
-  "https://teamca-frontend.vercel.app",
+  "https://teamca-frontend.vercel.app", // Always allow the production frontend
+  ...(process.env.NODE_ENV !== "production" 
+    ? ["http://localhost:4321", "http://127.0.0.1:4321"] // Only add localhosts in dev
+    : [])
 ].map(normalizeOrigin);
 
 const configuredOrigins = [
@@ -46,6 +47,11 @@ const allowedOrigins = Array.from(
 );
 
 const isLocalDevOrigin = (origin: string): boolean => {
+  // SECURITY GATE: Never allow local bypass in production
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
   try {
     const parsed = new URL(origin);
     return (
