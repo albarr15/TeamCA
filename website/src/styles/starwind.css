@@ -2,6 +2,19 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/forms";
 
+.alexandria {
+    font-family: "Alexandria", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+.poppins {
+    font-family: "Poppins", sans-serif;
+    font-weight: 100 900;
+    font-style: normal;
+}
+
 :root {
     --background: var(--color-zinc-100);
     --foreground: var(--color-zinc-950);
@@ -32,7 +45,8 @@
     --outline: var(--color-red-500);
     --radius: 0.45rem;
     --spacing: 0.25rem;
-    --font-heading: "Geist Variable", var(--font-sans);
+    --font-heading: "Alexandria", sans-serif;
+    --font-body: "Poppins", sans-serif;
     --font-mono: "JetBrains Mono Variable", monospace;
 
     /* sidebar variables */

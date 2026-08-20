@@ -20,7 +20,7 @@ const data = [
 
 export default function WhyFinancialMatters() {
   return (
-    <section className="w-full py-16 sm:py-20 px-4 overflow-hidden">
+    <section className="w-full max-w-7xl mx-auto px-6 py-20 sm:px-10 lg:px-16 overflow-hidden">
       <div className="max-w-6xl mx-auto text-center">
         <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold mb-4 text-[--secondary-color] leading-tight">
           Why Financial Matters

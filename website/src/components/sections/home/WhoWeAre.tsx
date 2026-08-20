@@ -2,15 +2,15 @@ import SectionHeader from "../../header/SectionHeader";
 
 export default function WhoWeAre() {
   return (
-    <section id="about" className="relative w-full min-h-[50vh] text-white bg-[--dark-primary] px-4 sm:px-6 py-14 sm:py-16 overflow-hidden scroll-mt-16">
+    <section id="about" className="relative w-full max-w-7xl mx-auto px-6 py-20 sm:px-10 lg:px-16 text-white bg-[--dark-primary] overflow-hidden scroll-mt-16">
       {/* Background Image */}
-      <div className="absolute inset-0">
+      {/* <div className="absolute inset-0">
         <img
           src="/partials/layer-blur.png"
           alt="background"
           className="w-full h-full object-cover"
         />
-      </div>
+      </div> */}
 
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto">
@@ -33,7 +33,7 @@ export default function WhoWeAre() {
               advisors under Pru Life UK Philippines.
             </p>
             <br />
-            <p className="text-base xs:text-lg sm:text-xl lg:text-2xl text-gray-300 leading-relaxed max-w-xl">
+            <p className=" max-w-xl">
               Pru Life UK is one of the leading life insurance companies in the
               Philippines, with 22 years of excellence in providing relevant and
               innovative life insurance products designed to meet the specific
@@ -44,9 +44,9 @@ export default function WhoWeAre() {
 
         {/* Affiliations Card (Full Width) */}
         <div className="mt-16 w-full">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 xs:p-6 md:p-8 border border-white/20 shadow-lg">
+          <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 xs:p-6 md:p-8 border border-white/20 shadow-lg">
             <div className="mb-8 flex flex-col gap-2">
-              <h2 className="text-base md:text-lg font-semibold text-[--affliation-text] uppercase">
+              <h2 className="text-base md:text-lg font-semibold !text-primary uppercase">
                 Affiliations
               </h2>
               <div className="w-full h-0.5 bg-white rounded-full opacity-20" />
