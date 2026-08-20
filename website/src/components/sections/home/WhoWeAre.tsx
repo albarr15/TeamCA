@@ -2,7 +2,7 @@ import SectionHeader from "../../header/SectionHeader";
 
 export default function WhoWeAre() {
   return (
-    <section className="relative w-full min-h-[50vh] text-white bg-[--dark-primary] px-4 sm:px-6 py-14 sm:py-16 overflow-hidden">
+    <section id="about" className="relative w-full min-h-[50vh] text-white bg-[--dark-primary] px-4 sm:px-6 py-14 sm:py-16 overflow-hidden scroll-mt-16">
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
@@ -22,14 +22,6 @@ export default function WhoWeAre() {
               <h1 className="text-4xl xs:text-5xl md:text-7xl font-bold leading-tight">
                 What is TEAM CA?
               </h1>
-            </div>
-
-            <div className="flex-grow" />
-
-            <div className="mt-8 md:mt-0">
-              <button className="px-6 py-3 bg-white text-black font-semibold rounded-xl hover:bg-gray-200 transition">
-                Learn More
-              </button>
             </div>
           </div>
 
@@ -59,27 +51,35 @@ export default function WhoWeAre() {
               </h2>
               <div className="w-full h-0.5 bg-white rounded-full opacity-20" />
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center justify-items-center">
-              <img
-                src="/images/home/pru-life.png"
-                alt="Affiliation 1"
-                className="h-16 xs:h-20 sm:h-24 object-contain"
-              />
-              <img
-                src="/images/home/black-orca.png"
-                alt="Affiliation 2"
-                className="h-16 xs:h-20 sm:h-24 object-contain"
-              />
-              <img
-                src="/icons/teamca-transparent-logo-1.png"
-                alt="Affiliation 3"
-                className="h-24 xs:h-32 sm:h-40 object-contain"
-              />
-              <img
-                src="/images/home/maperaang-pilipino.png"
-                alt="Affiliation 4"
-                className="h-24 xs:h-32 sm:h-40 object-contain"
-              />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 items-center justify-items-center">
+              <div className="w-full h-24 xs:h-28 sm:h-32 flex items-center justify-center p-2">
+                <img
+                  src="/images/home/pru-life.png"
+                  alt="Pru Life UK"
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+              <div className="w-full h-24 xs:h-28 sm:h-32 flex items-center justify-center p-2">
+                <img
+                  src="/images/home/black-orca.png"
+                  alt="Black Orca"
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+              <div className="w-full h-24 xs:h-28 sm:h-32 flex items-center justify-center p-2">
+                <img
+                  src="/icons/teamca-transparent-logo-1.png"
+                  alt="Team CA"
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+              <div className="w-full h-24 xs:h-28 sm:h-32 flex items-center justify-center p-2">
+                <img
+                  src="/images/home/maperaang-pilipino.png"
+                  alt="Maperaang Pilipino"
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
             </div>
           </div>
         </div>
