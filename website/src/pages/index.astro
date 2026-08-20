@@ -5,12 +5,16 @@ import HomeHero from "@/components/hero/HomeHero.tsx";
 import WhatWeDo from "@/components/sections/home/WhatWeDo.tsx";
 import WhoWeAre from "@/components/sections/home/WhoWeAre.tsx";
 import WhyFinancialMatters from "@/components/sections/home/WhyFinancialMatters.tsx";
-import Testimonials from "@/components/sections/home/Testimonials.tsx";
+import Testimonials from "@/components/sections/home/Testimonials.astro";
 import CTA from "@/components/sections/home/CTA.tsx";
+
+import { ThemeInitScript } from "@starwind-ui/astro/theme";
+import "@/styles/starwind.css";
 ---
 
 <html lang="en">
   <head>
+    <ThemeInitScript />
     <meta charset="utf-8" />
     <meta
       name="viewport"

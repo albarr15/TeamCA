@@ -1,0 +1,53 @@
+---
+import Testimonial3, {
+    type Testimonial,
+} from "../../starwind-pro/testimonial-03/Testimonial3.astro";
+
+const testimonials: Testimonial[] = [
+    {
+        name: "Jane Doe",
+        role: "New York, USA",
+        content: "This product transformed our workflow completely!",
+        image: "https://randomuser.me/api/portraits/women/1.jpg",
+    },
+    {
+        name: "John Smith",
+        role: "London, UK",
+        content: "Amazing experience with the team, very professional.",
+        image: "https://randomuser.me/api/portraits/men/2.jpg",
+    },
+    {
+        name: "Alice Johnson",
+        role: "Sydney, Australia",
+        content: "Helped our business grow 3x in 6 months!",
+        image: "https://randomuser.me/api/portraits/women/3.jpg",
+    },
+    {
+        name: "Bob Brown",
+        role: "Toronto, Canada",
+        content: "The support is unmatched and super friendly.",
+        image: "https://randomuser.me/api/portraits/men/4.jpg",
+    },
+    {
+        name: "Clara Lee",
+        role: "San Francisco, USA",
+        content: "Highly intuitive design and seamless experience.",
+        image: "https://randomuser.me/api/portraits/women/5.jpg",
+    },
+    {
+        name: "David Kim",
+        role: "Seoul, South Korea",
+        content: "Our clients love the results we delivered using this.",
+        image: "https://randomuser.me/api/portraits/men/6.jpg",
+    },
+];
+---
+
+<div class="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+    <Testimonial3
+        heading="What Our Clients Say"
+        description="Discover how Team CA has made a difference in the lives of our clients."
+        testimonials={testimonials}
+        class="w-full"
+    />
+</div>

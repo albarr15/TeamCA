@@ -1,0 +1,83 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { tv } from "tailwind-variants";
+
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/starwind/avatar";
+import { Card, CardContent } from "@/components/starwind/card";
+
+/** Testimonial data */
+export interface Testimonial {
+  /** Person's name */
+  name: string;
+  /** Job title/role */
+  role: string;
+  /** Testimonial content */
+  content: string;
+  /** Profile image URL */
+  image: string;
+}
+
+interface Props extends HTMLAttributes<"section"> {
+  /** Section heading */
+  heading?: string;
+  /** Section description */
+  description?: string;
+  /** Array of testimonials */
+  testimonials?: Testimonial[];
+}
+
+const testimonial3Styles = tv({
+  base: "@container mx-auto w-full max-w-7xl px-4 py-24",
+});
+
+const {
+  heading = "What Our Clients Say",
+  description = "Discover how Team CA has made a difference in the lives of our clients.",
+  testimonials = [],
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+<section class={testimonial3Styles({ class: className })} {...rest}>
+  <div class="mb-16 text-center">
+    <h2
+      class="font-heading text-3xl font-bold tracking-tight text-pretty @2xl:text-4xl"
+    >
+      {heading}
+    </h2>
+    <p class="text-muted-foreground mt-4 text-lg text-pretty">
+      {description}
+    </p>
+  </div>
+
+  <div class="grid gap-6 @xl:grid-cols-2 @3xl:grid-cols-3 @3xl:gap-8">
+    {
+      testimonials.map((testimonial) => (
+        <Card class="hover:ring-primary-accent transition-shadow">
+          <CardContent class="flex flex-col gap-4">
+            <div class="flex items-center gap-4">
+              <Avatar>
+                <AvatarImage src={testimonial.image} alt={testimonial.name} />
+                <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
+              </Avatar>
+              <div>
+                <div class="font-medium">{testimonial.name}</div>
+                <div class="text-muted-foreground text-sm">
+                  {testimonial.role}
+                </div>
+              </div>
+            </div>
+            <blockquote class="text-muted-foreground leading-relaxed">
+              "{testimonial.content}"
+            </blockquote>
+          </CardContent>
+        </Card>
+      ))
+    }
+  </div>
+</section>

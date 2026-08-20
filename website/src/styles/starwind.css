@@ -1,0 +1,136 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/forms";
+
+:root {
+    --background: var(--color-zinc-100);
+    --foreground: var(--color-zinc-950);
+    --card: var(--color-zinc-100);
+    --card-foreground: var(--color-zinc-950);
+    --popover: var(--color-zinc-100);
+    --popover-foreground: var(--color-zinc-950);
+    --primary: var(--color-red-700);
+    --primary-foreground: var(--color-white);
+    --primary-accent: var(--color-red-700);
+    --secondary: var(--color-zinc-200);
+    --secondary-foreground: var(--color-red-700);
+    --secondary-accent: var(--color-orange-600);
+    --muted: var(--color-zinc-200);
+    --muted-foreground: var(--color-zinc-700);
+    --accent: var(--color-red-600);
+    --accent-foreground: var(--color-white);
+    --info: var(--color-sky-300);
+    --info-foreground: var(--color-sky-950);
+    --success: var(--color-green-300);
+    --success-foreground: var(--color-green-950);
+    --warning: var(--color-amber-300);
+    --warning-foreground: var(--color-amber-950);
+    --error: var(--color-red-200);
+    --error-foreground: var(--color-red-900);
+    --border: var(--color-zinc-400);
+    --input: var(--color-zinc-400);
+    --outline: var(--color-red-500);
+    --radius: 0.45rem;
+    --spacing: 0.25rem;
+    --font-heading: "Geist Variable", var(--font-sans);
+    --font-mono: "JetBrains Mono Variable", monospace;
+
+    /* sidebar variables */
+    --sidebar-background: var(--color-zinc-200);
+    --sidebar-foreground: var(--color-zinc-950);
+    --sidebar-primary: var(--color-red-600);
+    --sidebar-primary-foreground: var(--color-white);
+    --sidebar-accent: var(--color-zinc-300);
+    --sidebar-accent-foreground: var(--color-zinc-950);
+    --sidebar-border: var(--color-zinc-400);
+    --sidebar-outline: var(--color-red-500);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-outline/50;
+    }
+
+    body {
+        font-family: "Inter Variable", var(--font-sans);
+    }
+
+    button {
+        @apply cursor-pointer;
+    }
+}
+
+@theme {
+    --animate-accordion-down: accordion-down 0.2s ease-out;
+    --animate-accordion-up: accordion-up 0.2s ease-out;
+
+    @keyframes accordion-down {
+        from {
+            height: 0;
+        }
+
+        to {
+            height: var(--starwind-accordion-content-height);
+        }
+    }
+
+    @keyframes accordion-up {
+        from {
+            height: var(--starwind-accordion-content-height);
+        }
+
+        to {
+            height: 0;
+        }
+    }
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-accent: var(--primary-accent);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary-accent: var(--secondary-accent);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-error: var(--error);
+    --color-error-foreground: var(--error-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-outline: var(--outline);
+
+    --radius-xs: calc(var(--radius) - 0.375rem);
+    --radius-sm: calc(var(--radius) - 0.25rem);
+    --radius-md: calc(var(--radius) - 0.125rem);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 0.25rem);
+    --radius-2xl: calc(var(--radius) + 0.5rem);
+    --radius-3xl: calc(var(--radius) + 1rem);
+
+    --font-heading: var(--font-heading);
+    --font-mono: var(--font-mono);
+
+    --color-sidebar: var(--sidebar-background);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-outline: var(--sidebar-outline);
+}
