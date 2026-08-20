@@ -1,18 +1,25 @@
 ---
 import "@/styles/global.css";
-import MainLayout from '@/layouts/MainLayout.tsx';
-import HomeHero from '@/components/hero/HomeHero.tsx';
-import WhatWeDo from '@/components/sections/home/WhatWeDo.tsx';
-import WhoWeAre from '@/components/sections/home/WhoWeAre.tsx';
-import WhyFinancialMatters from '@/components/sections/home/WhyFinancialMatters.tsx';
-import Testimonials from '@/components/sections/home/Testimonials.tsx';
-import CTA from '@/components/sections/home/CTA.tsx';
+import MainLayout from "@/layouts/MainLayout.tsx";
+import HomeHero from "@/components/hero/HomeHero.tsx";
+import WhatWeDo from "@/components/sections/home/WhatWeDo.tsx";
+import WhoWeAre from "@/components/sections/home/WhoWeAre.tsx";
+import WhyFinancialMatters from "@/components/sections/home/WhyFinancialMatters.tsx";
+import Testimonials from "@/components/sections/home/Testimonials.astro";
+import CTA from "@/components/sections/home/CTA.tsx";
 
+import { ThemeInitScript } from "@starwind-ui/astro/theme";
+import "@/styles/starwind.css";
 ---
+
 <html lang="en">
   <head>
+    <ThemeInitScript />
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#ac1212" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/teamca-white-circle-logo.png" />
@@ -20,13 +27,12 @@ import CTA from '@/components/sections/home/CTA.tsx';
   </head>
   <body>
     <MainLayout client:load>
-      <HomeHero client:load />
-      <WhoWeAre client:load />
-      <WhatWeDo client:load />
-      <WhyFinancialMatters client:load />
-      <Testimonials client:load />
-      <CTA client:load />
-
+      <HomeHero />
+      <WhoWeAre />
+      <WhatWeDo />
+      <WhyFinancialMatters />
+      <Testimonials />
+      <CTA />
     </MainLayout>
   </body>
 </html>

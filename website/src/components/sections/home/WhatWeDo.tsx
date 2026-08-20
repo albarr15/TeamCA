@@ -44,7 +44,7 @@ const services = [
 
 const WhatWeDo: React.FC = () => {
   return (
-    <section className="w-full py-20 px-6 md:px-12 lg:px-20 bg-gradient-to-b from-background to-muted/40">
+    <section className="w-full py-20 px-6 md:px-12 lg:px-20">
       <div className="max-w-7xl mx-auto text-center">
         <SectionHeader
           title="Our Services"
@@ -88,12 +88,12 @@ const WhatWeDo: React.FC = () => {
                     {service.description}
                   </p>
 
-                  {/* BUTTON (always bottom aligned) */}
+                  {/* BUTTON (always bottom aligned)
                   <div className="mt-auto pt-4">
                     <Button variant="secondary" className="w-full">
                       Learn More
                     </Button>
-                  </div>
+                  </div> */}
                 </div>
               );
             })}

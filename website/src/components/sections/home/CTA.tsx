@@ -4,15 +4,15 @@ import React from "react";
 
 const CTA: React.FC = () => {
   return (
-    <section className="relative w-full min-h-[60vh] text-white bg-[--dark-primary-2] px-4 sm:px-6 py-14 sm:py-16 overflow-hidden">
-      {/* Background Image */}
+    <section className="relative w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 overflow-hidden py-20">
+      {/* Background Image
       <div className="absolute inset-0">
         <img
           src="/partials/layer-blur.png"
           alt="background"
           className="w-full h-full object-cover"
         />
-      </div>
+      </div> */}
       <div className="max-w-5xl mx-auto">
         <SectionHeader
           title="Secure Your Future Today"
@@ -22,12 +22,12 @@ const CTA: React.FC = () => {
           size="xl"
         />
         <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12 sm:mt-24">
-          <Button
+          {/* <Button
             variant="secondary"
             className="flex items-center gap-2 backdrop-blur-md "
           >
             Book Consultation
-          </Button>
+          </Button> */}
           <Button
             variant="default"
             className="flex items-center gap-2 backdrop-blur-md "

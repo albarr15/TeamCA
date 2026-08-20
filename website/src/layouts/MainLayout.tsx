@@ -9,9 +9,9 @@ interface LayoutProps {
 
 const MainLayout = ({ children }: LayoutProps) => {
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    }
+    // if ("serviceWorker" in navigator) {
+    //   navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    // }
   }, []);
 
   return (
@@ -38,8 +38,7 @@ const MainLayout = ({ children }: LayoutProps) => {
 
       <Navbar />
 
-      {/* FIX HERE */}
-      <main className="flex flex-col flex-grow">{children}</main>
+      <main className="flex flex-col flex-grow w-full">{children}</main>
 
       <Footer />
     </div>

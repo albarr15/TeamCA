@@ -47,11 +47,17 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
+    "fast-wrap-ansi": "^0.2.2",
+    "react-helmet": "^6.1.0",
+    "sparse-bitfield": "^3.0.3",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "eslint": "9.39.4",
     "husky": "^8.0.0"
+  },
+  "overrides": {
+    "vite": "^8"
   }
 }
