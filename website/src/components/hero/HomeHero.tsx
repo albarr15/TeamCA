@@ -32,7 +32,7 @@ const HomeHero: React.FC = () => {
 
     const navbarOffset = 64;
     const elementPosition = target.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - navbarOffset;
+    const offsetPosition = elementPosition + window.scrollY - navbarOffset;
 
     window.scrollTo({
       top: offsetPosition,

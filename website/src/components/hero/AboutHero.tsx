@@ -1,43 +1,23 @@
 import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const AboutHero: React.FC = () => {
   const textRef = useRef<HTMLDivElement>(null);
-  const posterRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const textEl = textRef.current;
-    const posterEl = posterRef.current;
     const sectionEl = sectionRef.current;
 
-    if (!textEl || !posterEl || !sectionEl) return;
+    if (!textEl || !sectionEl) return;
 
     const ctx = gsap.context(() => {
-      // HERO TEXT
+      // Hero text entrance animation
       gsap.from(textEl, {
-        y: 60,
+        y: 50,
         opacity: 0,
-        duration: 1,
+        duration: 0.8,
         ease: "power3.out",
-      });
-
-      // TEAM POSTER
-      gsap.from(posterEl.querySelectorAll(".team-anim"), {
-        y: 40,
-        opacity: 0,
-        scale: 0.98,
-        stagger: 0.15,
-        duration: 0.9,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: posterEl,
-          start: "top 85%",
-          toggleActions: "play reverse play reverse",
-        },
       });
     }, sectionEl);
 
@@ -47,54 +27,46 @@ const AboutHero: React.FC = () => {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full min-h-screen overflow-hidden flex flex-col"
+      className="relative w-full min-h-[70vh] md:min-h-screen overflow-hidden flex flex-col justify-center items-center"
     >
-      {/* BG */}
+      {/* Background Gradient Shade */}
       <img
         src="/partials/circle-gradient-shade.png"
-        className="absolute inset-0 w-full h-full object-cover z-0"
+        alt="Background Gradient"
+        className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
       />
 
-      {/* CONTENT */}
-      <div className="relative z-20 flex flex-col flex-1">
-        {/* HERO TEXT */}
-        <div
-          ref={textRef}
+      {/* Poster as Background Layer */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-end justify-center">
+        <img
+          src="/partials/team-poster.png"
+          alt="Team Poster Background"
           className="
-            pt-32
-            px-6
-            md:px-12
-            lg:px-24
-            max-w-6xl
+            w-full
+            min-w-[680px] sm:min-w-[900px] md:min-w-full
+            h-auto
+            max-h-[55vh] sm:max-h-[65vh] md:max-h-[75vh]
+            object-contain
+            object-bottom
+            contrast-125
+            brightness-90
+            select-none
           "
-        >
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading text-white mb-4 leading-tight">
+        />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col justify-center flex-1 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 text-left">
+        <div ref={textRef} className="max-w-4xl">
+          <h1 className="text-[2.35rem] xs:text-[2.65rem] sm:text-5xl md:text-6xl lg:text-7xl font-heading text-white mb-4 sm:mb-6 leading-[1.06]">
             Meet the Team CA
           </h1>
-
-          <p className="text-white/90 text-sm sm:text-base md:text-lg max-w-3xl">
+          <p className="text-white/90 text-base xs:text-lg sm:text-xl md:text-2xl mb-8 max-w-2xl leading-relaxed">
             Team CA is a dynamic and purpose-driven group operating under the
             Black Orcas Summit Life Insurance Agency, proudly affiliated with
             Pru Life UK Philippines—one of the most trusted organizations in the
             life insurance industry.
           </p>
-        </div>
-
-        {/* PUSHES POSTER TO BOTTOM */}
-        <div className="mt-auto">
-          <div ref={posterRef} className="w-full flex justify-center">
-            <div className="team-anim w-full">
-              <img
-                src="/partials/team-poster.png"
-                alt="Team CA Poster"
-                className="
-                  w-full
-                  object-contain
-                  object-bottom
-                "
-              />
-            </div>
-          </div>
         </div>
       </div>
     </section>

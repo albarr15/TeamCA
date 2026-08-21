@@ -66,7 +66,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
 
   return (
     <div
-      className={`mb-8 mx-auto w-full ${alignClasses[align]} ${containerClasses[containerSize]}`}
+      className={`mb-8 mx-auto w-full  ${alignClasses[align]} ${containerClasses[containerSize]}`}
     >
       <h2 className={`font-bold my-7 sm:my-10 ${currentSize.h2}`}>
         {titleParts ? (
@@ -87,7 +87,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
         )}
       </h2>
 
-      {description && <p className={`mb-5 ${currentSize.p}`}>{description}</p>}
+      {description && <p className={`mb-5 max-w-3xl mx-auto ${currentSize.p}`}>{description}</p>}
     </div>
   );
 };
