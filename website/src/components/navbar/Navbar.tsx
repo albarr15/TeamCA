@@ -14,15 +14,17 @@ const Navbar: React.FC = () => {
   return (
     <div className="fixed top-0 left-0 w-full z-50">
       <nav className="flex items-center justify-between w-full py-3 px-4 sm:px-6 md:px-10 lg:px-24 xl:px-32 backdrop-blur-md border-b border-white/20 text-black">
-        <a href="/" className="flex items-center space-x-3">
-          <img
-            src="/icons/teamca-transparent-logo-1.png"
-            alt="Team CA Logo"
-            className="w-10 h-10 object-cover"
-          />
-        </a>
+        <div className="flex items-center">
+          <a href="/" className="flex items-center space-x-3">
+            <img
+              src="/icons/teamca-transparent-logo-1.png"
+              alt="Team CA Logo"
+              className="w-10 h-10 object-cover"
+            />
+          </a>
+        </div>
 
-        <div className="hidden md:flex gap-5 lg:gap-12 justify-center flex-1">
+        <div className="hidden md:flex justify-center items-center gap-5 lg:gap-12">
           {links.map((link) => {
             const path = link === "Home" ? "/" : `/${link.toLowerCase()}`;
 
@@ -30,13 +32,20 @@ const Navbar: React.FC = () => {
               <a
                 key={link}
                 href={path}
-                className="text-sm font-medium transition hover:text-primary-color"
+                className="text-sm font-medium transition hover:text-primary-color hover:underline"
               >
                 {link}
               </a>
             );
           })}
         </div>
+
+        <div className="hidden md:flex -ml-24 justify-end items-center">
+          <a href="/consultation">
+            <Button className="text-xs">Book Consultation</Button>
+          </a>
+        </div>
+
 
         <button
           className="md:hidden active:scale-90 transition p-2 -mr-2"

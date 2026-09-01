@@ -50,9 +50,11 @@ const ServicesHero: React.FC = () => {
           solutions to help you achieve your financial goals and protect what
           matters most.
         </p>
-        <Button variant="default" className="flex items-center gap-2">
-          BOOK CONSULTATION
-        </Button>
+        <a href="/consultation">
+          <Button variant="default" className="flex items-center gap-2">
+            BOOK CONSULTATION
+          </Button>
+        </a>
       </div>
     </section>
   );
