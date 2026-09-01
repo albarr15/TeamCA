@@ -3,15 +3,6 @@ import SectionHeader from "../../header/SectionHeader";
 export default function WhoWeAre() {
   return (
     <section id="about" className="relative w-full max-w-7xl mx-auto px-6 py-20 sm:px-10 lg:px-16 text-white bg-[--dark-primary] overflow-hidden scroll-mt-16">
-      {/* Background Image */}
-      {/* <div className="absolute inset-0">
-        <img
-          src="/partials/layer-blur.png"
-          alt="background"
-          className="w-full h-full object-cover"
-        />
-      </div> */}
-
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Top Grid */}

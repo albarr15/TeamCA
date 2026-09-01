@@ -1,6 +1,7 @@
 import React from "react";
 import { BsLinkedin } from "react-icons/bs";
 import { config } from "@/config/env";
+import { Mail } from "lucide-react";
 
 const Footer: React.FC = () => {
   return (
@@ -37,6 +38,7 @@ const Footer: React.FC = () => {
                   <li>Financial Planning</li>
                   <li>Investment Advice</li>
                   <li>Retirement Planning</li>
+                  <li>Education Planning</li>
                 </ul>
               </div>
 
@@ -46,9 +48,30 @@ const Footer: React.FC = () => {
                   Company
                 </h3>
                 <ul className="space-y-2 text-sm">
-                  <li>About Us</li>
-                  <li>Services</li>
-                  <li>Careers</li>
+                  <li>
+                    <a
+                      href="/about"
+                      className="hover:underline"
+                    >
+                      About Us
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/services"
+                      className="hover:underline"
+                    >
+                      Services
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/careers"
+                      className="hover:underline"
+                    >
+                      Careers
+                    </a>
+                  </li>
                   <li>
                     <a
                       href={config.frontendUrl}
@@ -80,6 +103,15 @@ const Footer: React.FC = () => {
                 aria-label="LinkedIn"
               >
                 <BsLinkedin className="w-5 h-5" />
+              </a>
+
+              {/* TODO: CHANGE EMAIL */}
+              <a
+                href="mailto:andrenicole.adriano@gmail.com"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition text-white"
+                aria-label="Email"
+              >
+                <Mail className="w-5 h-5" />
               </a>
             </div>
           </div>
