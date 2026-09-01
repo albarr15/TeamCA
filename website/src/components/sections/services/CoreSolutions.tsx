@@ -1,7 +1,5 @@
 import SectionHeader from "@/components/header/SectionHeader";
 
-import Button from "@/components/ui/Button";
-
 export default function CoreSolutions() {
   const solutions = [
     {
@@ -9,39 +7,39 @@ export default function CoreSolutions() {
       description:
         "Secure your family's future with tailored life insurance solutions.",
       image:
-        "https://images.unsplash.com/photo-1551836022-deb4988cc6c0?auto=format&fit=crop&w=1200&q=80",
+        "/images/services/national-cancer-institute-xDSD3Vmzh70-unsplash.jpg",
     },
     {
       title: "Investment Plans",
       description:
         "Grow your wealth with smart and diversified investment options.",
       image:
-        "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
+        "/images/services/photo-1554224155-8d04cb21cd6c.avif",
     },
     {
       title: "Education Savings",
       description:
         "Prepare for your child’s future with structured savings plans.",
       image:
-        "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80",
+        "/images/services/photo-1524995997946-a1c2e315a42f.avif",
     },
     {
       title: "Health Protection",
       description: "Comprehensive coverage for medical and emergency needs.",
       image:
-        "https://images.unsplash.com/photo-1580281657527-47f249e8f5c4?auto=format&fit=crop&w=1200&q=80",
+        "/images/services/chang-duong-nDi4YTMKP-g-unsplash.jpg",
     },
     {
       title: "Retirement Planning",
       description:
         "Secure your future with long-term retirement financial strategies.",
       image:
-        "https://images.unsplash.com/photo-1508385082359-f38ae991e8f2?auto=format&fit=crop&w=1200&q=80",
+        "/images/services/photo-1508385082359-f38ae991e8f2.avif",
     },
   ];
 
   return (
-    <section className="relative w-full min-h-[60vh] text-white bg-[--dark-primary] px-4 sm:px-6 py-14 sm:py-16 overflow-hidden">
+    <section className="relativew-full py-20 px-6 md:px-12 lg:px-20 min-h-[60vh] text-white bg-[--dark-primary] overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
         <img
@@ -63,17 +61,16 @@ export default function CoreSolutions() {
 
         {/* GRID */}
         <div className="mt-12 flex justify-center">
-          <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 w-full max-w-3xl">
+          <div className="grid grid-cols-1 sm:grid-cols-6 gap-4 w-full max-w-3xl">
             {solutions.map((item, index) => {
-              const isLastOdd =
-                solutions.length % 2 === 1 && index === solutions.length - 1;
+              const isBottomRow = solutions.length >= 2 && index >= solutions.length - 2;
 
               return (
                 <div
                   key={index}
                   className={`
-                    relative rounded-2xl overflow-hidden group shadow-lg
-                    ${isLastOdd ? "xs:col-span-2 h-[250px]" : "aspect-square min-h-[230px] xs:min-h-0"}
+                    relative rounded-2xl overflow-hidden group shadow-lg h-[250px]
+                    ${isBottomRow ? "col-span-3" : "col-span-2"}
                   `}
                 >
                   {/* IMAGE */}
@@ -83,12 +80,10 @@ export default function CoreSolutions() {
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
 
+                  {/* todo: fix gradient colors */}
                   {/* GRADIENT */}
-                  <img
-                    src="/images/services/gradient.png"
-                    alt="overlay"
-                    className="absolute bottom-0 left-0 w-full h-full object-cover opacity-95"
-                  />
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-t from-red-900/80 to-transparent" />
+
 
                   {/* TEXT */}
                   <div className="absolute bottom-0 left-0 w-full p-4 sm:p-5 z-10 flex flex-col gap-2">
@@ -96,16 +91,16 @@ export default function CoreSolutions() {
                       {item.title}
                     </h3>
 
-                    <p className="text-white/70 text-sm line-clamp-2">
+                    <p className="text-white/70 text-sm ">
                       {item.description}
                     </p>
 
                     {/* BUTTON */}
-                    <div className="mt-3">
+                    {/* <div className="mt-3">
                       <Button variant="default" className="px-4 py-2 text-sm">
                         Learn More
                       </Button>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               );

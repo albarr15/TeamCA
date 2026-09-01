@@ -1,18 +1,22 @@
 ---
 import "@/styles/global.css";
-import MainLayout from '@/layouts/MainLayout.tsx';
-import ServicesHero from '@/components/hero/ServicesHero.tsx';
+import MainLayout from "@/layouts/MainLayout.tsx";
+import ServicesHero from "@/components/hero/ServicesHero.tsx";
 import CoreSolutions from "@/components/sections/services/CoreSolutions";
 import CorporateSolutions from "@/components/sections/services/CorporateSolutions";
 import PersonalSolutions from "@/components/sections/services/PersonalSolutions";
 import CTA from "@/components/sections/home/CTA";
 
-
+import "@/styles/starwind.css";
 ---
+
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#ac1212" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/teamca-white-circle-logo.png" />
@@ -25,7 +29,6 @@ import CTA from "@/components/sections/home/CTA";
       <CorporateSolutions client:load />
       <PersonalSolutions client:load />
       <CTA client:load />
-
     </MainLayout>
   </body>
 </html>

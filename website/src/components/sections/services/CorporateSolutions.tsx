@@ -33,7 +33,7 @@ export default function CorporateSolutions() {
   };
 
   return (
-    <section className="relative w-full min-h-[60vh] text-white bg-[--dark-primary] px-4 sm:px-6 py-14 sm:py-16 overflow-hidden">
+    <section className="relative w-full py-20 px-6 md:px-12 lg:px-20 min-h-[60vh] text-white bg-[--dark-primary] overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
         <img
@@ -68,24 +68,22 @@ export default function CorporateSolutions() {
                   onClick={() => toggleCard(index)}
                   className="w-full flex items-center text-left justify-between gap-4 px-4 sm:px-6 py-5 hover:bg-white/5 transition-colors duration-300"
                 >
-                    <h3 className="text-base xs:text-lg md:text-xl font-semibold">
+                  <h3 className="text-base xs:text-lg md:text-xl font-semibold">
                     {item.title}
                   </h3>
 
                   <ChevronDown
-                    className={`w-5 h-5 transition-transform duration-300 ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 transition-transform duration-300 ${isOpen ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
 
                 {/* CONTENT */}
                 <div
-                  className={`grid transition-all duration-500 ease-in-out ${
-                    isOpen
-                      ? "grid-rows-[1fr] opacity-100"
-                      : "grid-rows-[0fr] opacity-0"
-                  }`}
+                  className={`grid transition-all duration-500 ease-in-out ${isOpen
+                    ? "grid-rows-[1fr] opacity-100"
+                    : "grid-rows-[0fr] opacity-0"
+                    }`}
                 >
                   <div className="overflow-hidden">
                     <div className="px-4 sm:px-6 py-3 text-white/70 text-sm md:text-base leading-relaxed">
