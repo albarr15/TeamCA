@@ -2,7 +2,9 @@ import { tv } from "tailwind-variants";
 
 export const card = tv({
   base: [
-    "bg-card text-card-foreground group/card ring-border flex flex-col gap-(--card-spacing) rounded-xl py-(--card-spacing) ring-1",
+    "bg-card/80 text-card-foreground group/card flex flex-col gap-(--card-spacing) rounded-xl py-(--card-spacing)",
+    "backdrop-blur-xl shadow-md transition-all duration-300",
+    "hover:-translate-y-2 hover:bg-card/90 hover:shadow-xl",
     "has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0",
     "*:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
   ],

@@ -1,18 +1,21 @@
 ---
 import "@/styles/global.css";
-import MainLayout from '@/layouts/MainLayout.tsx';
-import AboutHero from '@/components/hero/AboutHero.tsx';
+import MainLayout from "@/layouts/MainLayout.tsx";
+import AboutHero from "@/components/hero/AboutHero.tsx";
 import Mission from "@/components/sections/about/Mission";
 import WhatWeStandFor from "@/components/sections/about/WhatWeStandFor";
 import Founder from "@/components/sections/about/Founder";
 import Recognition from "@/components/sections/about/Recognition";
-
-
+import "@/styles/starwind.css";
 ---
+
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#ac1212" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/teamca-white-circle-logo.png" />
@@ -26,7 +29,6 @@ import Recognition from "@/components/sections/about/Recognition";
       <Founder client:load />
 
       <Recognition client:load />
-
     </MainLayout>
   </body>
 </html>

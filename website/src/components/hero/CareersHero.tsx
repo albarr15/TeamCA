@@ -7,15 +7,13 @@ gsap.registerPlugin(ScrollTrigger);
 
 const CareersHero: React.FC = () => {
   const textRef = useRef<HTMLDivElement>(null);
-  const posterRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const textEl = textRef.current;
-    const posterEl = posterRef.current;
     const sectionEl = sectionRef.current;
 
-    if (!textEl || !posterEl || !sectionEl) return;
+    if (!textEl || !sectionEl) return;
 
     const ctx = gsap.context(() => {
       // HERO TEXT
@@ -26,23 +24,6 @@ const CareersHero: React.FC = () => {
         ease: "power3.out",
       });
 
-      // TEAM SECTION
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: posterEl,
-          start: "top 80%",
-          toggleActions: "play reverse play reverse",
-        },
-      });
-
-      tl.from(posterEl.querySelectorAll(".team-anim"), {
-        y: 40,
-        opacity: 0,
-        scale: 0.98,
-        stagger: 0.15,
-        duration: 0.9,
-        ease: "power3.out",
-      });
     }, sectionEl);
 
     return () => ctx.revert();

@@ -24,15 +24,7 @@ export default function WhatWeStandFor() {
   ];
 
   return (
-    <section className="relative w-full min-h-[60vh] text-white bg-[--dark-primary] px-6 py-16 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0">
-        <img
-          src="/partials/layer-blur.png"
-          alt="background"
-          className="w-full h-full object-cover"
-        />
-      </div>
+    <section className="relative w-full py-20 px-6 md:px-12 lg:px-20 min-h-[60vh] text-white bg-[--dark-primary] overflow-hidden">
 
       <div className="relative z-10 max-w-7xl mx-auto">
         <SectionHeader
@@ -50,27 +42,27 @@ export default function WhatWeStandFor() {
               <div
                 key={index}
                 className="
-                    flex flex-col items-center
+                    flex flex-col items-center justify-center
                     rounded-2xl
-                    border border-white/10
-                    bg-white/5 backdrop-blur-xl
-                    p-8 md:p-10
+                    bg-card/80 backdrop-blur-xl
+                    p-4 md:p-10
                     text-center
-                    min-h-[320px]
+                    shadow-md
+                    min-h-[200px]
                     transition-all duration-300
-                    hover:-translate-y-2 hover:bg-white/10 hover:shadow-xl
+                    hover:-translate-y-2 hover:bg-white/90 hover:shadow-xl
                     "
               >
                 {/* Icon */}
                 <div className="w-12 h-12 flex items-center justify-center mb-4">
-                  <Icon className="w-10 h-10 text-white" />
+                  <Icon className="w-10 h-10 text-primary" />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-semibold mb-2">{card.title}</h3>
+                <h3 className="text-xl font-semibold mb-2 !text-primary">{card.title}</h3>
 
                 {/* Description */}
-                <p className="text-white/80 text-sm md:text-base">
+                <p className="text-sm md:text-base !text-foreground">
                   {card.description}
                 </p>
               </div>

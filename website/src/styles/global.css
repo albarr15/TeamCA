@@ -2,6 +2,20 @@
 
 @import "tailwindcss";
 
+@theme {
+  --animate-marquee: marquee 90s linear infinite;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 .alexandria {
   font-family: "Alexandria", sans-serif;
   font-optical-sizing: auto;
@@ -48,6 +62,10 @@
   --font-body-weight: 400;
 
   --affliation-text: #99a1af;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 html,

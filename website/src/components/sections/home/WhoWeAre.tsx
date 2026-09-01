@@ -3,15 +3,6 @@ import SectionHeader from "../../header/SectionHeader";
 export default function WhoWeAre() {
   return (
     <section id="about" className="relative w-full max-w-7xl mx-auto px-6 py-20 sm:px-10 lg:px-16 text-white bg-[--dark-primary] overflow-hidden scroll-mt-16">
-      {/* Background Image */}
-      {/* <div className="absolute inset-0">
-        <img
-          src="/partials/layer-blur.png"
-          alt="background"
-          className="w-full h-full object-cover"
-        />
-      </div> */}
-
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Top Grid */}
@@ -44,7 +35,7 @@ export default function WhoWeAre() {
 
         {/* Affiliations Card (Full Width) */}
         <div className="mt-16 w-full">
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 xs:p-6 md:p-8 border border-white/20 shadow-lg">
+          <div className="bg-card/80 backdrop-blur-md rounded-2xl p-4 xs:p-6 md:p-8 border border-white/20 shadow-lg">
             <div className="mb-8 flex flex-col gap-2">
               <h2 className="text-base md:text-lg font-semibold !text-primary uppercase">
                 Affiliations
@@ -54,7 +45,7 @@ export default function WhoWeAre() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 items-center justify-items-center">
               <div className="w-full h-24 xs:h-28 sm:h-32 flex items-center justify-center p-2">
                 <img
-                  src="/images/home/pru-life.png"
+                  src="/images/home/pru-square.png"
                   alt="Pru Life UK"
                   className="max-h-full max-w-full object-contain"
                 />

@@ -22,7 +22,7 @@ export default function WhyFinancialMatters() {
   return (
     <section className="w-full max-w-7xl mx-auto px-6 py-20 sm:px-10 lg:px-16 overflow-hidden">
       <div className="max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold mb-4 text-[--secondary-color] leading-tight">
+        <h2 className="text-3xl xs:text-4xl sm:text-5xl font-bold mb-4 leading-tight">
           Why Financial Matters
         </h2>
         <p className="mb-12 sm:mb-16 max-w-4xl mx-auto text-base sm:text-xl">
@@ -59,13 +59,20 @@ export default function WhyFinancialMatters() {
           </div>
         </div>
 
-        <div className="mt-14 sm:mt-16 bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-6 max-w-4xl mx-auto flex flex-col xs:flex-row items-start gap-4">
-          <HelpCircle className="w-10 h-10 text-[--secondary-color] flex-shrink-0" />
-          <div className="text-left">
-            <p className="font-bold text-xl sm:text-2xl text-[--secondary-color]">
+        <div className="mt-14 sm:mt-16 
+            rounded-2xl 
+            bg-card/80 backdrop-blur-xl
+            p-5 shadow-md transition-all duration-300
+            hover:-translate-y-2 hover:bg-card/90 hover:shadow-xl p-4 sm:p-6 max-w-4xl mx-auto flex flex-col xs:flex-row items-start gap-4">
+          <div className="flex gap-4 items-center !text-primary">
+            <HelpCircle className="w-10 h-10 flex-shrink-0 " />
+            <p className="!font-bold text-xl sm:text-2xl !text-primary">
               Did you know?
             </p>
-            <p className="text-base mt-1">
+          </div>
+          <div className="text-left ">
+
+            <p className="text-base mt-1 !text-foreground">
               Most families are unprepared for financial emergencies. With
               proper life insurance and financial planning, you can protect your
               loved ones and ensure their future security, no matter what life
