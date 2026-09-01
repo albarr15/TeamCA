@@ -8,13 +8,6 @@ const CTA: React.FC = () => {
       {/* Background Image */}
 
       <div className="relative max-w-5xl mx-auto rounded-2xl ring-1 ring-white/80 p-8 overflow-hidden">
-        <div className="absolute inset-0 z-15">
-          <img
-            src="/partials/layer-blur.png"
-            alt="background"
-            className="w-full h-full object-cover"
-          />
-        </div>
         <div className="absolute inset-0 z-10">
           <img
             src="/images/home/family.jpg"

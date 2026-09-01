@@ -22,14 +22,6 @@ export default function FinancialAdvisors() {
 
   return (
     <section className="relative w-full py-20 px-6 md:px-12 lg:px-20 min-h-[60vh] text-white bg-[--dark-primary] overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0">
-        <img
-          src="/partials/layer-blur.png"
-          alt="background"
-          className="w-full h-full object-cover"
-        />
-      </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
         <SectionHeader
