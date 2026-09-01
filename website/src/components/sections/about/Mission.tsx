@@ -20,12 +20,20 @@ export default function Mission() {
           color="yellow"
         />
 
-        <div className="mt-12 flex justify-center">
-          <img
-            src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80"
-            alt="Team collaboration sample"
-            className="w-full max-w-5xl h-[260px] sm:h-[340px] md:h-[420px] object-cover rounded-2xl shadow-lg"
-          />
+        <div className="mt-12 w-full overflow-hidden rounded-2xl shadow-lg">
+          <div className="flex w-max animate-marquee">
+            <img
+              src="/partials/pru-gallery.png"
+              alt="Pru Life UK Gallery"
+              className="h-[25rem] w-auto max-w-none"
+            />
+            <img
+              src="/partials/pru-gallery.png"
+              alt="Pru Life UK Gallery"
+              className="h-[25rem] w-auto !max-w-none"
+              aria-hidden="true"
+            />
+          </div>
         </div>
       </div>
     </section>
