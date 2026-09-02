@@ -6,7 +6,23 @@ import { Button } from "@/components/starwind/button";
 import { Card, CardContent } from "@/components/starwind/card";
 import { Input } from "@/components/starwind/input";
 import { Label } from "@/components/starwind/label";
-import { Textarea } from "@/components/starwind/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/starwind/radio-group";
+import { Separator } from "@/components/starwind/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/starwind/select";
+import Textarea from "@/components/starwind/textarea/Textarea.astro";
+import { Toggle } from "@/components/starwind/toggle";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+} from "@/components/starwind/combobox";
 
 interface Props extends HTMLAttributes<"section"> {
   /** Badge/eyebrow text */
@@ -28,15 +44,23 @@ const {
   class: className,
   ...rest
 } = Astro.props;
+
+const bookingTypes = [
+  { value: "individual", label: "An Individual" },
+  { value: "organization", label: "A Business" },
+] as const;
+
+const positions = [
+  { value: "ceo", label: "CEO" },
+  { value: "manager", label: "Manager" },
+  { value: "director", label: "Director" },
+  { value: "hr", label: "HR" },
+  { value: "other", label: "Other (please specify)" },
+];
 ---
 
 <section class={sectionStyles({ class: className })} {...rest}>
   <div class="text-center">
-    <!-- <span
-      class="bg-primary/10 text-primary-accent inline-block rounded-full px-4 py-1.5 text-sm font-medium"
-    >
-      {badge}
-    </span> -->
     <h2
       class="font-heading mt-6 text-3xl font-bold tracking-tight @xl:text-4xl @3xl:text-5xl"
     >
@@ -50,53 +74,258 @@ const {
   <Card class="mt-10">
     <CardContent>
       <form class="space-y-6" id="contact-form-02" name="contact-form">
+        <div class="flex flex-col gap-1">
+          <Label for="contact-name-02"
+            >Full Name
+            <span class="text-primary">*</span>
+          </Label>
+          <Input
+            id="contact-name-02"
+            name="name"
+            type="text"
+            placeholder="Your name"
+            required
+            autocomplete="name"
+          />
+        </div>
+
         <div class="grid gap-6 @xl:grid-cols-2">
           <div class="flex flex-col gap-1">
-            <Label for="contact-name-02">Full Name</Label>
-            <Input
-              id="contact-name-02"
-              name="name"
-              type="text"
-              placeholder="Your name"
-              required
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <Label for="contact-email-02">Email Address</Label>
+            <Label for="contact-email-02"
+              >Email Address
+              <span class="text-primary">*</span>
+            </Label>
             <Input
               id="contact-email-02"
               name="email"
               type="email"
               placeholder="you@example.com"
               required
+              autocomplete="email"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <Label for="phone-number-02">
+              Phone Number
+              <span class="text-primary">*</span></Label
+            >
+            <Input
+              id="phone-number-02"
+              name="phone-number"
+              type="tel"
+              placeholder="+63 900 000 0000"
+              required
+              autocomplete="tel"
             />
           </div>
         </div>
 
         <div class="flex flex-col gap-1">
-          <Label for="contact-subject-02">Subject</Label>
-          <Input
-            id="contact-subject-02"
-            name="subject"
-            type="text"
-            placeholder="How can we help?"
-            required
-          />
+          <span class="font-medium"
+            >I'm booking as an :<span class="text-primary">*</span></span
+          >
+          <RadioGroup
+            name="booking-type"
+            defaultValue="individual"
+            class="grid gap-6 @xl:grid-cols-2"
+            id="booking-type-radio"
+          >
+            <div class="flex gap-2 items-center">
+              <RadioGroupItem id="individual" value="individual" />
+              <Label for="individual">Individual</Label>
+            </div>
+            <div class="flex gap-2 items-center">
+              <RadioGroupItem id="organization" value="organization" />
+              <Label for="organization">Organization</Label>
+            </div>
+          </RadioGroup>
         </div>
 
-        <div class="flex flex-col gap-1">
-          <Label for="contact-message-02">Message</Label>
-          <Textarea
-            id="contact-message-02"
-            name="message"
-            placeholder="Tell us what you're hoping to plan for — whether it's for yourself, your family, or your team."
-            rows={5}
-            required
-          />
-        </div>
+        <fieldset
+          id="individual-wrapper"
+          class="space-y-6 border-0 p-0 m-0 min-w-0"
+        >
+          <!-- INDIVIDUAL FIELDS -->
+          <Separator />
 
-        <Button variant="primary" type="submit" class="w-full @xl:w-auto">
-          Send Message
+          <div class="flex justify-center">
+            <span class="text-sm text-foreground/60"
+              >Individual Booking Information</span
+            >
+          </div>
+
+          <div class="grid gap-6 @xl:grid-cols-2">
+            <div class="flex flex-col gap-1">
+              <Label for="contact-age-02">Age</Label>
+              <Input
+                id="contact-age-02"
+                name="age"
+                type="number"
+                min="18"
+                max="120"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <Label for="life-stage">Life Stage</Label>
+              <Select name="life-stage" required>
+                <SelectTrigger
+                  id="life-stage"
+                  class="w-full !text-foreground"
+                />
+                <SelectContent>
+                  <SelectItem value="single" aria-label="Single"
+                    >Single</SelectItem
+                  >
+                  <SelectItem value="married" aria-label="Married"
+                    >Married</SelectItem
+                  >
+                  <SelectItem value="growing-family" aria-label="Growing Family"
+                    >Growing Family</SelectItem
+                  >
+                  <SelectItem
+                    value="nearing-retirement"
+                    aria-label="Nearing Retirement"
+                    >Nearing Retirement</SelectItem
+                  >
+                  <SelectItem value="retired" aria-label="Retired"
+                    >Retired</SelectItem
+                  >
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <fieldset>
+              <legend class="font-medium"
+                >Services of Interest
+                <span class="text-primary">*</span>
+              </legend>
+              <div class="grid gap-x-6 gap-y-2 @xl:grid-cols-2">
+                <Toggle size="sm" variant="outline" aria-label="Life Insurance"
+                  >Life Insurance</Toggle
+                >
+                <Toggle
+                  size="sm"
+                  variant="outline"
+                  aria-label="Financial Planning">Financial Planning</Toggle
+                >
+                <Toggle
+                  size="sm"
+                  variant="outline"
+                  aria-label="Investment Advice">Investment Advice</Toggle
+                >
+                <Toggle
+                  size="sm"
+                  variant="outline"
+                  aria-label="Retirement Planning">Retirement Planning</Toggle
+                >
+                <Toggle
+                  size="sm"
+                  variant="outline"
+                  aria-label="Education Planning">Education Planning</Toggle
+                >
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <Label for="contact-message-indiv-02">Message</Label>
+            <Textarea
+              id="contact-message-indiv-02"
+              name="message-indiv"
+              placeholder="Tell us what you're hoping to plan for — whether it's for yourself, your family, or your team."
+              rows={4}
+            />
+          </div>
+        </fieldset>
+
+        <!-- ORGANIZATION FIELDS -->
+        <fieldset
+          class="space-y-6 hidden border-0 p-0 m-0 min-w-0"
+          id="organization-wrapper"
+          disabled
+        >
+          <Separator />
+
+          <div class="flex justify-center">
+            <span class="text-sm text-foreground/60"
+              >Organization Booking Information</span
+            >
+          </div>
+
+          <div class="grid gap-6 @xl:grid-cols-2">
+            <div class="flex flex-col gap-1">
+              <Label for="company-name-02"
+                >Company Name
+                <span class="text-primary">*</span>
+              </Label>
+              <Input
+                id="company-name-02"
+                name="company-name"
+                type="text"
+                required
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <Label for="position-input">Your Position</Label>
+              <Combobox id="position-combobox" name="position" required>
+                <ComboboxInput
+                  id="position-input"
+                  placeholder="Search positions..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>No position found.</ComboboxEmpty>
+                  {
+                    positions.map(({ value, label }) => (
+                      <ComboboxItem value={value}>{label}</ComboboxItem>
+                    ))
+                  }
+                </ComboboxContent>
+              </Combobox>
+            </div>
+
+            <div
+              id="other-position-wrapper"
+              class="hidden mt-2 flex flex-col gap-1"
+            >
+              <Label for="other-position">Please specify your position</Label>
+              <Input
+                id="other-position"
+                name="otherPosition"
+                placeholder="Other position"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <fieldset>
+              <legend class="font-medium"
+                >Services of Interest
+                <span class="text-primary">*</span>
+              </legend>
+              <div class="grid gap-x-6 gap-y-2 @xl:grid-cols-2">
+                <Toggle size="sm" variant="outline">Life Insurance</Toggle>
+                <Toggle size="sm" variant="outline">Financial Planning</Toggle>
+                <Toggle size="sm" variant="outline">Investment Advice</Toggle>
+                <Toggle size="sm" variant="outline">Retirement Planning</Toggle>
+                <Toggle size="sm" variant="outline">Education Planning</Toggle>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <Label for="contact-message-org-02">Message</Label>
+            <Textarea
+              id="contact-message-org-02"
+              name="message-org"
+              placeholder="Tell us what you're hoping to plan for — whether it's for yourself, your family, or your team."
+              rows={4}
+            />
+          </div>
+        </fieldset>
+        <Button variant="primary" type="submit" class="w-full mt-6 @xl:w-auto">
+          Book Consultation
         </Button>
       </form>
     </CardContent>
@@ -105,30 +334,63 @@ const {
   <p class="text-muted-foreground mt-6 text-center text-sm">
     We'll get back to you within 1-2 business days.
   </p>
-</section>
 
-<script>
-  function handleFormSubmit() {
+  <script>
+    // Since Combobox renders a hidden input for form submission (via `name`),
+    // listen on the form's change event and check the hidden input's value.
     const form = document.querySelector("#contact-form-02") as HTMLFormElement;
 
-    if (form) {
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const formValues = Object.fromEntries(formData.entries());
+    const combobox = document.getElementById("position-combobox");
+    const positionWrapper = document.getElementById("other-position-wrapper");
 
-        // demo form data logging
-        console.log("Contact form:", formValues);
+    combobox?.addEventListener("starwind:value-change", (e) => {
+      const newValue =
+        (e as CustomEvent).detail?.value ?? (e as CustomEvent).detail;
+      positionWrapper?.classList.toggle("hidden", newValue !== "other");
+    });
 
-        // You can add additional logic here like:
-        // - Form validation
-        // - API submission
-        // - Success/error handling
-      });
+    const bookingTypeRadio = document.getElementById("booking-type-radio");
+    const individualWrapper = document.getElementById(
+      "individual-wrapper",
+    ) as HTMLFieldSetElement | null;
+    const organizationWrapper = document.getElementById(
+      "organization-wrapper",
+    ) as HTMLFieldSetElement | null;
+
+    bookingTypeRadio?.addEventListener("starwind:value-change", (e) => {
+      const newValue =
+        (e as CustomEvent).detail?.value ?? (e as CustomEvent).detail;
+      const isIndividual = newValue === "individual";
+      if (individualWrapper) {
+        individualWrapper.classList.toggle("hidden", !isIndividual);
+        individualWrapper.disabled = !isIndividual;
+      }
+      if (organizationWrapper) {
+        organizationWrapper.classList.toggle("hidden", isIndividual);
+        organizationWrapper.disabled = isIndividual;
+      }
+    });
+
+    function handleFormSubmit() {
+      if (form) {
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const formData = new FormData(form);
+          const formValues = Object.fromEntries(formData.entries());
+
+          // demo form data logging
+          console.log("Contact form:", formValues);
+
+          // You can add additional logic here like:
+          // - Form validation
+          // - API submission
+          // - Success/error handling
+        });
+      }
     }
-  }
 
-  handleFormSubmit();
+    handleFormSubmit();
 
-  document.addEventListener("astro:after-swap", handleFormSubmit);
-</script>
+    document.addEventListener("astro:after-swap", handleFormSubmit);
+  </script>
+</section>
