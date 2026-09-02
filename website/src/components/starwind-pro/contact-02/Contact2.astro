@@ -59,6 +59,48 @@ const positions = [
   { value: "HR", label: "HR" },
   { value: "Other (please specify)", label: "Other (please specify)" },
 ];
+
+const individualServices = [
+  { value: "Family Protection", label: "Family Protection" },
+  {
+    value: "Income Protection / Replacement",
+    label: "Income Protection / Replacement",
+  },
+  {
+    value: "Critical Illness Funding / Protection",
+    label: "Critical Illness Funding / Protection",
+  },
+  { value: "Retirement Planning", label: "Retirement Planning" },
+  { value: "Education Funding", label: "Education Funding" },
+  {
+    value: "Mortgage Redemption Insurance",
+    label: "Mortgage Redemption Insurance",
+  },
+  { value: "Estate Planning", label: "Estate Planning" },
+  { value: "Legacy Savings", label: "Legacy Savings" },
+  {
+    value: "Short to Long Term Investments Planning",
+    label: "Short to Long Term Investments Planning",
+  },
+];
+
+const businessServices = [
+  { value: "Employee Benefits", label: "Employee Benefits" },
+  {
+    value: "Enhancement of Current Medical Benefits",
+    label: "Enhancement of Current Medical Benefits",
+  },
+  {
+    value: "Executive Benefits / Keyman Insurance",
+    label: "Executive Benefits / Keyman Insurance",
+  },
+  { value: "Corporate Investments", label: "Corporate Investments" },
+  {
+    value: "Business Protection (Buy-Sell Agreement)",
+    label: "Business Protection (Buy-Sell Agreement)",
+  },
+  { value: "Employee Retirement Funder", label: "Employee Retirement Funder" },
+];
 ---
 
 <section class={sectionStyles({ class: className })} {...rest}>
@@ -203,36 +245,16 @@ const positions = [
               class="grid gap-x-6 gap-y-2 @xl:grid-cols-2"
               aria-label="Services of Interest"
             >
-              <Checkbox
-                id="svc-life-insurance"
-                name="services-of-interest"
-                value="Life Insurance"
-                label="Life Insurance"
-              />
-              <Checkbox
-                id="svc-financial-planning"
-                name="services-of-interest"
-                value="Financial Planning"
-                label="Financial Planning"
-              />
-              <Checkbox
-                id="svc-investment-advice"
-                name="services-of-interest"
-                value="Investment Advice"
-                label="Investment Advice"
-              />
-              <Checkbox
-                id="svc-retirement-planning"
-                name="services-of-interest"
-                value="Retirement Planning"
-                label="Retirement Planning"
-              />
-              <Checkbox
-                id="svc-education-planning"
-                name="services-of-interest"
-                value="Education Planning"
-                label="Education Planning"
-              />
+              {
+                individualServices.map(({ value, label }) => (
+                  <Checkbox
+                    value={value}
+                    name="services-of-interest"
+                    id={value}
+                    label={label}
+                  />
+                ))
+              }
             </CheckboxGroup>
           </div>
 
@@ -311,36 +333,16 @@ const positions = [
               class="grid gap-x-6 gap-y-2 @xl:grid-cols-2"
               aria-label="Services of Interest"
             >
-              <Checkbox
-                id="svc-life-insurance-org"
-                name="services-of-interest"
-                value="Life Insurance"
-                label="Life Insurance"
-              />
-              <Checkbox
-                id="svc-financial-planning-org"
-                name="services-of-interest"
-                value="Financial Planning"
-                label="Financial Planning"
-              />
-              <Checkbox
-                id="svc-investment-advice-org"
-                name="services-of-interest"
-                value="Investment Advice"
-                label="Investment Advice"
-              />
-              <Checkbox
-                id="svc-retirement-planning-org"
-                name="services-of-interest"
-                value="Retirement Planning"
-                label="Retirement Planning"
-              />
-              <Checkbox
-                id="svc-education-planning-org"
-                name="services-of-interest"
-                value="Education Planning"
-                label="Education Planning"
-              />
+              {
+                businessServices.map(({ value, label }) => (
+                  <Checkbox
+                    value={value}
+                    name="services-of-interest"
+                    id={value}
+                    label={label}
+                  />
+                ))
+              }
             </CheckboxGroup>
           </div>
 
