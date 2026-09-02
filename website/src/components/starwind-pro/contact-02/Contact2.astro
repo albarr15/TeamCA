@@ -366,10 +366,6 @@ const positions = [
   </p>
 
   <script>
-    // Since Combobox renders a hidden input for form submission (via `name`),
-    // listen on the form's change event and check the hidden input's value.
-    const form = document.querySelector("#contact-form-02") as HTMLFormElement;
-
     const combobox = document.getElementById("position-combobox");
     const positionWrapper = document.getElementById("other-position-wrapper");
 
@@ -400,35 +396,8 @@ const positions = [
         organizationWrapper.disabled = isIndividual;
       }
     });
-
-    function handleFormSubmit() {
-      if (form) {
-        form.addEventListener("submit", (e) => {
-          e.preventDefault();
-          const formData = new FormData(form);
-          const formValues: Record<
-            string,
-            FormDataEntryValue | FormDataEntryValue[]
-          > = Object.fromEntries(formData.entries());
-
-          // Override the collapsed single value with the full array
-          formValues["services-of-interest"] = formData.getAll(
-            "services-of-interest",
-          );
-
-          // demo form data logging
-          console.log("Contact form:", formValues);
-
-          // You can add additional logic here like:
-          // - Form validation
-          // - API submission
-          // - Success/error handling
-        });
-      }
-    }
-
-    handleFormSubmit();
-
-    document.addEventListener("astro:after-swap", handleFormSubmit);
+  </script>
+  <script>
+    import "@/scripts/EmailSender";
   </script>
 </section>

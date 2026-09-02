@@ -4,6 +4,7 @@ import MainLayout from "@/layouts/MainLayout.tsx";
 
 import "@/styles/starwind.css";
 import ConsultationForm from "@/components/sections/appointment/Consultation.astro";
+import { Toaster } from "@/components/starwind/toast";
 ---
 
 <html lang="en">
@@ -24,6 +25,7 @@ import ConsultationForm from "@/components/sections/appointment/Consultation.ast
     <body>
         <MainLayout client:load>
             <ConsultationForm />
+            <Toaster position="bottom-right" />
         </MainLayout>
     </body>
 </html>
