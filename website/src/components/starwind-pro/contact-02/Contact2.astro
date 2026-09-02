@@ -48,16 +48,16 @@ const {
 } = Astro.props;
 
 const bookingTypes = [
-  { value: "individual", label: "An Individual" },
-  { value: "organization", label: "A Business" },
+  { value: "Individual", label: "An Individual" },
+  { value: "Organization", label: "A Business" },
 ] as const;
 
 const positions = [
-  { value: "ceo", label: "CEO" },
-  { value: "manager", label: "Manager" },
-  { value: "director", label: "Director" },
-  { value: "hr", label: "HR" },
-  { value: "other", label: "Other (please specify)" },
+  { value: "CEO", label: "CEO" },
+  { value: "Manager", label: "Manager" },
+  { value: "Director", label: "Director" },
+  { value: "HR", label: "HR" },
+  { value: "Other (please specify)", label: "Other (please specify)" },
 ];
 ---
 
@@ -128,16 +128,16 @@ const positions = [
           >
           <RadioGroup
             name="booking-type"
-            defaultValue="individual"
+            defaultValue="Individual"
             class="grid gap-6 @xl:grid-cols-2"
             id="booking-type-radio"
           >
             <div class="flex gap-2 items-center">
-              <RadioGroupItem id="individual" value="individual" />
+              <RadioGroupItem id="individual" value="Individual" />
               <Label for="individual">Individual</Label>
             </div>
             <div class="flex gap-2 items-center">
-              <RadioGroupItem id="organization" value="organization" />
+              <RadioGroupItem id="organization" value="Organization" />
               <Label for="organization">Organization</Label>
             </div>
           </RadioGroup>
@@ -175,21 +175,21 @@ const positions = [
                   class="w-full !text-foreground"
                 />
                 <SelectContent>
-                  <SelectItem value="single" aria-label="Single"
+                  <SelectItem value="Single" aria-label="Single"
                     >Single</SelectItem
                   >
-                  <SelectItem value="married" aria-label="Married"
+                  <SelectItem value="Married" aria-label="Married"
                     >Married</SelectItem
                   >
-                  <SelectItem value="growing-family" aria-label="Growing Family"
+                  <SelectItem value="Growing Family" aria-label="Growing Family"
                     >Growing Family</SelectItem
                   >
                   <SelectItem
-                    value="nearing-retirement"
+                    value="Nearing Retirement"
                     aria-label="Nearing Retirement"
                     >Nearing Retirement</SelectItem
                   >
-                  <SelectItem value="retired" aria-label="Retired"
+                  <SelectItem value="Retired" aria-label="Retired"
                     >Retired</SelectItem
                   >
                 </SelectContent>
@@ -206,31 +206,31 @@ const positions = [
               <Checkbox
                 id="svc-life-insurance"
                 name="services-of-interest"
-                value="life-insurance"
+                value="Life Insurance"
                 label="Life Insurance"
               />
               <Checkbox
                 id="svc-financial-planning"
                 name="services-of-interest"
-                value="financial-planning"
+                value="Financial Planning"
                 label="Financial Planning"
               />
               <Checkbox
                 id="svc-investment-advice"
                 name="services-of-interest"
-                value="investment-advice"
+                value="Investment Advice"
                 label="Investment Advice"
               />
               <Checkbox
                 id="svc-retirement-planning"
                 name="services-of-interest"
-                value="retirement-planning"
+                value="Retirement Planning"
                 label="Retirement Planning"
               />
               <Checkbox
                 id="svc-education-planning"
                 name="services-of-interest"
-                value="education-planning"
+                value="Education Planning"
                 label="Education Planning"
               />
             </CheckboxGroup>
@@ -314,31 +314,31 @@ const positions = [
               <Checkbox
                 id="svc-life-insurance-org"
                 name="services-of-interest"
-                value="life-insurance"
+                value="Life Insurance"
                 label="Life Insurance"
               />
               <Checkbox
                 id="svc-financial-planning-org"
                 name="services-of-interest"
-                value="financial-planning"
+                value="Financial Planning"
                 label="Financial Planning"
               />
               <Checkbox
                 id="svc-investment-advice-org"
                 name="services-of-interest"
-                value="investment-advice"
+                value="Investment Advice"
                 label="Investment Advice"
               />
               <Checkbox
                 id="svc-retirement-planning-org"
                 name="services-of-interest"
-                value="retirement-planning"
+                value="Retirement Planning"
                 label="Retirement Planning"
               />
               <Checkbox
                 id="svc-education-planning-org"
                 name="services-of-interest"
-                value="education-planning"
+                value="Education Planning"
                 label="Education Planning"
               />
             </CheckboxGroup>
@@ -386,7 +386,7 @@ const positions = [
     bookingTypeRadio?.addEventListener("starwind:value-change", (e) => {
       const newValue =
         (e as CustomEvent).detail?.value ?? (e as CustomEvent).detail;
-      const isIndividual = newValue === "individual";
+      const isIndividual = newValue === "Individual";
       if (individualWrapper) {
         individualWrapper.classList.toggle("hidden", !isIndividual);
         individualWrapper.disabled = !isIndividual;
