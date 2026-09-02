@@ -39,7 +39,6 @@ const MainLayout = ({ children }: LayoutProps) => {
       <Navbar />
 
       <main className="flex flex-col flex-grow w-full">{children}</main>
-
       <Footer />
     </div>
   );

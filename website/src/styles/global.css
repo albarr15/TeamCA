@@ -115,10 +115,6 @@ p {
   font-weight: var(--font-body-weight);
 }
 
-button {
-  color: var(--white-color);
-}
-
 .bold-heading {
   font-weight: 900;
 }

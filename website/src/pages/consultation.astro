@@ -1,0 +1,31 @@
+---
+import "@/styles/global.css";
+import MainLayout from "@/layouts/MainLayout.tsx";
+
+import "@/styles/starwind.css";
+import ConsultationForm from "@/components/sections/appointment/Consultation.astro";
+import { Toaster } from "@/components/starwind/toast";
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <meta name="theme-color" content="#ac1212" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link
+            rel="apple-touch-icon"
+            href="/icons/teamca-white-circle-logo.png"
+        />
+        <title>Book a Consultation | Team CA</title>
+    </head>
+    <body>
+        <MainLayout client:load>
+            <ConsultationForm />
+            <Toaster position="bottom-right" />
+        </MainLayout>
+    </body>
+</html>

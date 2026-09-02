@@ -24,11 +24,13 @@ const CTA: React.FC = () => {
             size="xl"
           />
           <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12 sm:mt-24">
-            <Button
-              className="flex items-center gap-2 backdrop-blur-md "
-            >
-              Book Consultation
-            </Button>
+            <a href="/consultation">
+              <Button
+                className="flex items-center gap-2 backdrop-blur-md"
+              >
+                Book Consultation
+              </Button>
+            </a>
           </div>
         </div>
       </div>

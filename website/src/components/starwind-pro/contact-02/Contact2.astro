@@ -1,0 +1,405 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { tv } from "tailwind-variants";
+
+import { Button } from "@/components/starwind/button";
+import { Card, CardContent } from "@/components/starwind/card";
+import { Input } from "@/components/starwind/input";
+import { Label } from "@/components/starwind/label";
+import { RadioGroup, RadioGroupItem } from "@/components/starwind/radio-group";
+import { Separator } from "@/components/starwind/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/starwind/select";
+import Textarea from "@/components/starwind/textarea/Textarea.astro";
+import { Toggle } from "@/components/starwind/toggle";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+} from "@/components/starwind/combobox";
+
+import { Checkbox } from "@/components/starwind/checkbox";
+import { CheckboxGroup } from "@/components/starwind/checkbox-group";
+interface Props extends HTMLAttributes<"section"> {
+  /** Badge/eyebrow text */
+  badge?: string;
+  /** Section heading */
+  heading?: string;
+  /** Section description */
+  description?: string;
+}
+
+const sectionStyles = tv({
+  base: "@container mx-auto w-full max-w-3xl px-4 py-24",
+});
+
+const {
+  // badge = "Contact",
+  heading = "Send Us a Message",
+  description = "Fill out the form below and we'll get back to you as soon as possible.",
+  class: className,
+  ...rest
+} = Astro.props;
+
+const bookingTypes = [
+  { value: "Individual", label: "An Individual" },
+  { value: "Organization", label: "A Business" },
+] as const;
+
+const positions = [
+  { value: "CEO", label: "CEO" },
+  { value: "Manager", label: "Manager" },
+  { value: "Director", label: "Director" },
+  { value: "HR", label: "HR" },
+  { value: "Other (please specify)", label: "Other (please specify)" },
+];
+
+const individualServices = [
+  { value: "Family Protection", label: "Family Protection" },
+  {
+    value: "Income Protection / Replacement",
+    label: "Income Protection / Replacement",
+  },
+  {
+    value: "Critical Illness Funding / Protection",
+    label: "Critical Illness Funding / Protection",
+  },
+  { value: "Retirement Planning", label: "Retirement Planning" },
+  { value: "Education Funding", label: "Education Funding" },
+  {
+    value: "Mortgage Redemption Insurance",
+    label: "Mortgage Redemption Insurance",
+  },
+  { value: "Estate Planning", label: "Estate Planning" },
+  { value: "Legacy Savings", label: "Legacy Savings" },
+  {
+    value: "Short to Long Term Investments Planning",
+    label: "Short to Long Term Investments Planning",
+  },
+];
+
+const businessServices = [
+  { value: "Employee Benefits", label: "Employee Benefits" },
+  {
+    value: "Enhancement of Current Medical Benefits",
+    label: "Enhancement of Current Medical Benefits",
+  },
+  {
+    value: "Executive Benefits / Keyman Insurance",
+    label: "Executive Benefits / Keyman Insurance",
+  },
+  { value: "Corporate Investments", label: "Corporate Investments" },
+  {
+    value: "Business Protection (Buy-Sell Agreement)",
+    label: "Business Protection (Buy-Sell Agreement)",
+  },
+  { value: "Employee Retirement Funder", label: "Employee Retirement Funder" },
+];
+---
+
+<section class={sectionStyles({ class: className })} {...rest}>
+  <div class="text-center">
+    <h2
+      class="font-heading mt-6 text-3xl font-bold tracking-tight @xl:text-4xl @3xl:text-5xl"
+    >
+      {heading}
+    </h2>
+    <p class="text-muted-foreground mx-auto mt-4 max-w-xl text-lg">
+      {description}
+    </p>
+  </div>
+
+  <Card class="mt-10">
+    <CardContent>
+      <form class="space-y-6" id="contact-form-02" name="contact-form">
+        <div class="flex flex-col gap-1">
+          <Label for="contact-name-02"
+            >Full Name
+            <span class="text-primary">*</span>
+          </Label>
+          <Input
+            id="contact-name-02"
+            name="name"
+            type="text"
+            placeholder="Your name"
+            required
+            autocomplete="name"
+          />
+        </div>
+
+        <div class="grid gap-6 @xl:grid-cols-2">
+          <div class="flex flex-col gap-1">
+            <Label for="contact-email-02"
+              >Email Address
+              <span class="text-primary">*</span>
+            </Label>
+            <Input
+              id="contact-email-02"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <Label for="phone-number-02">
+              Phone Number
+              <span class="text-primary">*</span></Label
+            >
+            <Input
+              id="phone-number-02"
+              name="phone-number"
+              type="tel"
+              placeholder="+63 900 000 0000"
+              required
+              autocomplete="tel"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <span class="font-medium"
+            >I'm booking as an :<span class="text-primary">*</span></span
+          >
+          <RadioGroup
+            name="booking-type"
+            defaultValue="Individual"
+            class="grid gap-6 @xl:grid-cols-2"
+            id="booking-type-radio"
+          >
+            <div class="flex gap-2 items-center">
+              <RadioGroupItem id="individual" value="Individual" />
+              <Label for="individual">Individual</Label>
+            </div>
+            <div class="flex gap-2 items-center">
+              <RadioGroupItem id="organization" value="Organization" />
+              <Label for="organization">Organization</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        <fieldset
+          id="individual-wrapper"
+          class="space-y-6 border-0 p-0 m-0 min-w-0"
+        >
+          <!-- INDIVIDUAL FIELDS -->
+          <Separator />
+
+          <div class="flex justify-center">
+            <span class="text-sm text-foreground/60"
+              >Individual Booking Information</span
+            >
+          </div>
+
+          <div class="grid gap-6 @xl:grid-cols-2">
+            <div class="flex flex-col gap-1">
+              <Label for="contact-age-02">Age</Label>
+              <Input
+                id="contact-age-02"
+                name="age"
+                type="number"
+                min="18"
+                max="120"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <Label for="life-stage">Life Stage</Label>
+              <Select name="life-stage" required>
+                <SelectTrigger
+                  id="life-stage"
+                  class="w-full !text-foreground"
+                />
+                <SelectContent>
+                  <SelectItem value="Single" aria-label="Single"
+                    >Single</SelectItem
+                  >
+                  <SelectItem value="Married" aria-label="Married"
+                    >Married</SelectItem
+                  >
+                  <SelectItem value="Growing Family" aria-label="Growing Family"
+                    >Growing Family</SelectItem
+                  >
+                  <SelectItem
+                    value="Nearing Retirement"
+                    aria-label="Nearing Retirement"
+                    >Nearing Retirement</SelectItem
+                  >
+                  <SelectItem value="Retired" aria-label="Retired"
+                    >Retired</SelectItem
+                  >
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="font-medium"> Services of Interest </span>
+            <CheckboxGroup
+              class="grid gap-x-6 gap-y-2 @xl:grid-cols-2"
+              aria-label="Services of Interest"
+            >
+              {
+                individualServices.map(({ value, label }) => (
+                  <Checkbox
+                    value={value}
+                    name="services-of-interest"
+                    id={value}
+                    label={label}
+                  />
+                ))
+              }
+            </CheckboxGroup>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <Label for="contact-message-indiv-02">Message</Label>
+            <Textarea
+              id="contact-message-indiv-02"
+              name="message-indiv"
+              placeholder="Tell us what you're hoping to plan for — whether it's for yourself, your family, or your team."
+              rows={4}
+            />
+          </div>
+        </fieldset>
+
+        <!-- ORGANIZATION FIELDS -->
+        <fieldset
+          class="space-y-6 hidden border-0 p-0 m-0 min-w-0"
+          id="organization-wrapper"
+          disabled
+        >
+          <Separator />
+
+          <div class="flex justify-center">
+            <span class="text-sm text-foreground/60"
+              >Organization Booking Information</span
+            >
+          </div>
+
+          <div class="grid gap-6 @xl:grid-cols-2">
+            <div class="flex flex-col gap-1">
+              <Label for="company-name-02"
+                >Company Name
+                <span class="text-primary">*</span>
+              </Label>
+              <Input
+                id="company-name-02"
+                name="company-name"
+                type="text"
+                required
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <Label for="position-input">Your Position</Label>
+              <Combobox id="position-combobox" name="position" required>
+                <ComboboxInput
+                  id="position-input"
+                  placeholder="Search positions..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>No position found.</ComboboxEmpty>
+                  {
+                    positions.map(({ value, label }) => (
+                      <ComboboxItem value={value}>{label}</ComboboxItem>
+                    ))
+                  }
+                </ComboboxContent>
+              </Combobox>
+            </div>
+
+            <div
+              id="other-position-wrapper"
+              class="hidden mt-2 flex flex-col gap-1"
+            >
+              <Label for="other-position">Please specify your position</Label>
+              <Input
+                id="other-position"
+                name="otherPosition"
+                placeholder="Other position"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="font-medium"> Services of Interest </span>
+            <CheckboxGroup
+              class="grid gap-x-6 gap-y-2 @xl:grid-cols-2"
+              aria-label="Services of Interest"
+            >
+              {
+                businessServices.map(({ value, label }) => (
+                  <Checkbox
+                    value={value}
+                    name="services-of-interest"
+                    id={value}
+                    label={label}
+                  />
+                ))
+              }
+            </CheckboxGroup>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <Label for="contact-message-org-02">Message</Label>
+            <Textarea
+              id="contact-message-org-02"
+              name="message-org"
+              placeholder="Tell us what you're hoping to plan for — whether it's for yourself, your family, or your team."
+              rows={4}
+            />
+          </div>
+        </fieldset>
+        <Button variant="primary" type="submit" class="w-full mt-6 @xl:w-auto">
+          Book Consultation
+        </Button>
+      </form>
+    </CardContent>
+  </Card>
+
+  <p class="text-muted-foreground mt-6 text-center text-sm">
+    We'll get back to you within 1-2 business days.
+  </p>
+
+  <script>
+    const combobox = document.getElementById("position-combobox");
+    const positionWrapper = document.getElementById("other-position-wrapper");
+
+    combobox?.addEventListener("starwind:value-change", (e) => {
+      const newValue =
+        (e as CustomEvent).detail?.value ?? (e as CustomEvent).detail;
+      positionWrapper?.classList.toggle("hidden", newValue !== "other");
+    });
+
+    const bookingTypeRadio = document.getElementById("booking-type-radio");
+    const individualWrapper = document.getElementById(
+      "individual-wrapper",
+    ) as HTMLFieldSetElement | null;
+    const organizationWrapper = document.getElementById(
+      "organization-wrapper",
+    ) as HTMLFieldSetElement | null;
+
+    bookingTypeRadio?.addEventListener("starwind:value-change", (e) => {
+      const newValue =
+        (e as CustomEvent).detail?.value ?? (e as CustomEvent).detail;
+      const isIndividual = newValue === "Individual";
+      if (individualWrapper) {
+        individualWrapper.classList.toggle("hidden", !isIndividual);
+        individualWrapper.disabled = !isIndividual;
+      }
+      if (organizationWrapper) {
+        organizationWrapper.classList.toggle("hidden", isIndividual);
+        organizationWrapper.disabled = isIndividual;
+      }
+    });
+  </script>
+  <script>
+    import "@/scripts/EmailSender";
+  </script>
+</section>
