@@ -24,6 +24,8 @@ import {
   ComboboxItem,
 } from "@/components/starwind/combobox";
 
+import { Checkbox } from "@/components/starwind/checkbox";
+import { CheckboxGroup } from "@/components/starwind/checkbox-group";
 interface Props extends HTMLAttributes<"section"> {
   /** Badge/eyebrow text */
   badge?: string;
@@ -196,37 +198,42 @@ const positions = [
           </div>
 
           <div class="flex flex-col gap-1">
-            <fieldset>
-              <legend class="font-medium"
-                >Services of Interest
-                <span class="text-primary">*</span>
-              </legend>
-              <div class="grid gap-x-6 gap-y-2 @xl:grid-cols-2">
-                <Toggle size="sm" variant="outline" aria-label="Life Insurance"
-                  >Life Insurance</Toggle
-                >
-                <Toggle
-                  size="sm"
-                  variant="outline"
-                  aria-label="Financial Planning">Financial Planning</Toggle
-                >
-                <Toggle
-                  size="sm"
-                  variant="outline"
-                  aria-label="Investment Advice">Investment Advice</Toggle
-                >
-                <Toggle
-                  size="sm"
-                  variant="outline"
-                  aria-label="Retirement Planning">Retirement Planning</Toggle
-                >
-                <Toggle
-                  size="sm"
-                  variant="outline"
-                  aria-label="Education Planning">Education Planning</Toggle
-                >
-              </div>
-            </fieldset>
+            <span class="font-medium"> Services of Interest </span>
+            <CheckboxGroup
+              class="grid gap-x-6 gap-y-2 @xl:grid-cols-2"
+              aria-label="Services of Interest"
+            >
+              <Checkbox
+                id="svc-life-insurance"
+                name="services-of-interest"
+                value="life-insurance"
+                label="Life Insurance"
+              />
+              <Checkbox
+                id="svc-financial-planning"
+                name="services-of-interest"
+                value="financial-planning"
+                label="Financial Planning"
+              />
+              <Checkbox
+                id="svc-investment-advice"
+                name="services-of-interest"
+                value="investment-advice"
+                label="Investment Advice"
+              />
+              <Checkbox
+                id="svc-retirement-planning"
+                name="services-of-interest"
+                value="retirement-planning"
+                label="Retirement Planning"
+              />
+              <Checkbox
+                id="svc-education-planning"
+                name="services-of-interest"
+                value="education-planning"
+                label="Education Planning"
+              />
+            </CheckboxGroup>
           </div>
 
           <div class="flex flex-col gap-1">
@@ -299,19 +306,42 @@ const positions = [
           </div>
 
           <div class="flex flex-col gap-1">
-            <fieldset>
-              <legend class="font-medium"
-                >Services of Interest
-                <span class="text-primary">*</span>
-              </legend>
-              <div class="grid gap-x-6 gap-y-2 @xl:grid-cols-2">
-                <Toggle size="sm" variant="outline">Life Insurance</Toggle>
-                <Toggle size="sm" variant="outline">Financial Planning</Toggle>
-                <Toggle size="sm" variant="outline">Investment Advice</Toggle>
-                <Toggle size="sm" variant="outline">Retirement Planning</Toggle>
-                <Toggle size="sm" variant="outline">Education Planning</Toggle>
-              </div>
-            </fieldset>
+            <span class="font-medium"> Services of Interest </span>
+            <CheckboxGroup
+              class="grid gap-x-6 gap-y-2 @xl:grid-cols-2"
+              aria-label="Services of Interest"
+            >
+              <Checkbox
+                id="svc-life-insurance-org"
+                name="services-of-interest"
+                value="life-insurance"
+                label="Life Insurance"
+              />
+              <Checkbox
+                id="svc-financial-planning-org"
+                name="services-of-interest"
+                value="financial-planning"
+                label="Financial Planning"
+              />
+              <Checkbox
+                id="svc-investment-advice-org"
+                name="services-of-interest"
+                value="investment-advice"
+                label="Investment Advice"
+              />
+              <Checkbox
+                id="svc-retirement-planning-org"
+                name="services-of-interest"
+                value="retirement-planning"
+                label="Retirement Planning"
+              />
+              <Checkbox
+                id="svc-education-planning-org"
+                name="services-of-interest"
+                value="education-planning"
+                label="Education Planning"
+              />
+            </CheckboxGroup>
           </div>
 
           <div class="flex flex-col gap-1">
@@ -376,7 +406,15 @@ const positions = [
         form.addEventListener("submit", (e) => {
           e.preventDefault();
           const formData = new FormData(form);
-          const formValues = Object.fromEntries(formData.entries());
+          const formValues: Record<
+            string,
+            FormDataEntryValue | FormDataEntryValue[]
+          > = Object.fromEntries(formData.entries());
+
+          // Override the collapsed single value with the full array
+          formValues["services-of-interest"] = formData.getAll(
+            "services-of-interest",
+          );
 
           // demo form data logging
           console.log("Contact form:", formValues);
