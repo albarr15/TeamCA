@@ -6,6 +6,7 @@ import CoreSolutions from "@/components/sections/services/CoreSolutions";
 import CorporateSolutions from "@/components/sections/services/CorporateSolutions";
 import PersonalSolutions from "@/components/sections/services/PersonalSolutions";
 import CTA from "@/components/sections/home/CTA";
+import Hero3 from "@/components/starwind-pro/hero-03/Hero3.astro";
 
 import "@/styles/starwind.css";
 ---
@@ -24,7 +25,16 @@ import "@/styles/starwind.css";
   </head>
   <body>
     <MainLayout client:load>
-      <ServicesHero client:load />
+      <Hero3
+        heading="Comprehensive Coverage, Tailored to Your Life"
+        description="We help individuals build financial security and businesses protect their people and assets, with services ranging from critical illness protection to employee retirement funding."
+        primaryButtonText="Browse Services"
+        primaryButtonHref="#core-solutions"
+        image={{
+          src: "/images/services/resume-genius-IESB4iFVuzA-unsplash (1).jpg",
+          alt: "Insurance advisor meeting with client",
+        }}
+      />
       <CoreSolutions client:load />
       <CorporateSolutions client:load />
       <PersonalSolutions client:load />
