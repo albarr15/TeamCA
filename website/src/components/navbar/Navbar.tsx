@@ -9,7 +9,7 @@ import "@/styles/global.css";
 
 const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const links = ["Home", "About", "Services", "Careers"];
+  const links = ["Home", "About", "Services", "Careers", "Contact"];
 
   return (
     <div className="fixed top-0 left-0 w-full z-50">
