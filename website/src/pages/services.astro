@@ -1,14 +1,82 @@
 ---
 import "@/styles/global.css";
 import MainLayout from "@/layouts/MainLayout.tsx";
-import ServicesHero from "@/components/hero/ServicesHero.tsx";
 import CoreSolutions from "@/components/sections/services/CoreSolutions";
 import CorporateSolutions from "@/components/sections/services/CorporateSolutions";
-import PersonalSolutions from "@/components/sections/services/PersonalSolutions";
+import PersonalSolutions from "@/components/sections/services/PersonalSolutions.astro";
+
 import CTA from "@/components/sections/home/CTA";
 import Hero3 from "@/components/starwind-pro/hero-03/Hero3.astro";
 
 import "@/styles/starwind.css";
+import {
+  Banknote,
+  GraduationCap,
+  HeartPulse,
+  Home,
+  Landmark,
+  PiggyBank,
+  ScrollText,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+
+const solutions = [
+  {
+    title: "Family Protection",
+    description:
+      "Secure your family's financial future with life insurance coverage built for long-term peace of mind.",
+    icon: Users,
+  },
+  {
+    title: "Income Protection / Replacement",
+    description:
+      "Safeguard your household's income so your family's lifestyle stays protected even if the unexpected happens.",
+    icon: Banknote,
+  },
+  {
+    title: "Critical Illness Funding / Protection",
+    description:
+      "Get financial support to cover treatment and recovery costs if you're diagnosed with a critical illness.",
+    icon: HeartPulse,
+  },
+  {
+    title: "Retirement Planning",
+    description:
+      "Build a strategic savings plan that helps you retire comfortably and confidently.",
+    icon: PiggyBank,
+  },
+  {
+    title: "Education Funding",
+    description:
+      "Prepare for your children's academic future with structured, goal-based education savings plans.",
+    icon: GraduationCap,
+  },
+  {
+    title: "Mortgage Redemption Insurance",
+    description:
+      "Protect your family's home by ensuring your mortgage is paid off even if you're no longer around.",
+    icon: Home,
+  },
+  {
+    title: "Estate Planning",
+    description:
+      "Preserve and pass on your wealth to loved ones with a clear, tax-efficient estate plan.",
+    icon: ScrollText,
+  },
+  {
+    title: "Legacy Savings",
+    description:
+      "Build a lasting financial legacy that supports the people and causes you care about most.",
+    icon: Landmark,
+  },
+  {
+    title: "Short to Long Term Investments Planning",
+    description:
+      "Grow your wealth with investment strategies tailored to both immediate needs and long-term goals.",
+    icon: TrendingUp,
+  },
+];
 ---
 
 <html lang="en">
@@ -35,10 +103,14 @@ import "@/styles/starwind.css";
           alt: "Insurance advisor meeting with client",
         }}
       />
-      <CoreSolutions client:load />
-      <CorporateSolutions client:load />
-      <PersonalSolutions client:load />
-      <CTA client:load />
+      <CoreSolutions />
+      <PersonalSolutions
+        heading="Personal / Individual Insurance"
+        description="Comprehensive coverage designed to protect your family, your income, and your future — every step of the way."
+        solutions={solutions}
+      />
+      <CorporateSolutions />
+      <CTA />
     </MainLayout>
   </body>
 </html>
