@@ -2,8 +2,7 @@
 import "@/styles/global.css";
 import MainLayout from "@/layouts/MainLayout.tsx";
 import CoreSolutions from "@/components/sections/services/CoreSolutions";
-import CorporateSolutions from "@/components/sections/services/CorporateSolutions";
-import PersonalSolutions from "@/components/sections/services/PersonalSolutions.astro";
+import ServicesGridSection from "@/components/sections/services/ServicesGridSection.astro";
 
 import CTA from "@/components/sections/home/CTA";
 import Hero3 from "@/components/starwind-pro/hero-03/Hero3.astro";
@@ -11,17 +10,23 @@ import Hero3 from "@/components/starwind-pro/hero-03/Hero3.astro";
 import "@/styles/starwind.css";
 import {
   Banknote,
+  Briefcase,
+  FileSignature,
   GraduationCap,
+  HeartHandshake,
   HeartPulse,
   Home,
   Landmark,
+  LineChart,
   PiggyBank,
   ScrollText,
   TrendingUp,
   Users,
+  Users2,
+  Wallet,
 } from "lucide-react";
 
-const solutions = [
+const personalSolutions = [
   {
     title: "Family Protection",
     description:
@@ -77,6 +82,45 @@ const solutions = [
     icon: TrendingUp,
   },
 ];
+
+const corporateSolutions = [
+  {
+    title: "Employee Benefits",
+    description:
+      "Attract and retain top talent with comprehensive benefits packages that support your team's wellbeing.",
+    icon: Users2,
+  },
+  {
+    title: "Enhancement of Current Medical Benefits",
+    description:
+      "Strengthen your existing medical coverage with enhanced plans that better protect your employees.",
+    icon: HeartHandshake,
+  },
+  {
+    title: "Executive Benefits / Keyman Insurance",
+    description:
+      "Protect your business from financial disruption by insuring the key people who drive its success.",
+    icon: Briefcase,
+  },
+  {
+    title: "Corporate Investments",
+    description:
+      "Grow your company's capital with strategic investment plans built for long-term business growth.",
+    icon: LineChart,
+  },
+  {
+    title: "Business Protection (Buy-Sell Agreement)",
+    description:
+      "Ensure business continuity with agreements that fund smooth ownership transitions when the unexpected happens.",
+    icon: FileSignature,
+  },
+  {
+    title: "Employee Retirement Funder",
+    description:
+      "Help your employees retire with confidence through structured, employer-supported retirement plans.",
+    icon: Wallet,
+  },
+];
 ---
 
 <html lang="en">
@@ -104,12 +148,16 @@ const solutions = [
         }}
       />
       <CoreSolutions />
-      <PersonalSolutions
+      <ServicesGridSection
         heading="Personal / Individual Insurance"
         description="Comprehensive coverage designed to protect your family, your income, and your future — every step of the way."
-        solutions={solutions}
+        solutions={personalSolutions}
       />
-      <CorporateSolutions />
+      <ServicesGridSection
+        heading="Organization / Corporate Insurance"
+        description="Support your employees, safeguard your leadership, and invest in your company's growth with solutions built for business."
+        solutions={corporateSolutions}
+      />
       <CTA />
     </MainLayout>
   </body>
