@@ -112,5 +112,5 @@ export default defineConfig({
     }),
   ],
   output: "static",
-  outDir: "../website/docs",
+  outDir: "../dist",
 });
