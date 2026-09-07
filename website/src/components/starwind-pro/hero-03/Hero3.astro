@@ -64,7 +64,11 @@ const {
         {description}
       </p>
       <div class="mt-8 flex flex-col flex-wrap gap-4 @md:flex-row">
-        {primaryButtonText && <Button>{primaryButtonText}</Button>}
+        {
+          primaryButtonText && (
+            <Button id="primary-btn">{primaryButtonText}</Button>
+          )
+        }
       </div>
     </div>
     <div class="">
@@ -74,3 +78,13 @@ const {
     </div>
   </div>
 </section>
+
+<script>
+  import { handleScroll } from "@/scripts/ScrollHandler";
+
+  // Runs on initial load and view transitions (if using Astro ViewTransitions)
+  handleScroll("core-solutions", "primary-btn");
+  document.addEventListener("astro:page-load", () =>
+    handleScroll("core-solutions", "primary-btn"),
+  );
+</script>

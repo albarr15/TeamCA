@@ -12,6 +12,9 @@ const MainLayout = ({ children }: LayoutProps) => {
     // if ("serviceWorker" in navigator) {
     //   navigator.serviceWorker.register("/sw.js").catch(() => undefined);
     // }
+    if ("history" in window && "scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
   }, []);
 
   return (

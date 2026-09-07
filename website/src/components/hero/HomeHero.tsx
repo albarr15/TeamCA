@@ -81,7 +81,7 @@ const HomeHero: React.FC = () => {
           <p className="text-white/90 text-base xs:text-lg sm:text-xl md:text-2xl mb-8 max-w-2xl leading-relaxed">
             Because love means preparing for their future, no matter what.
           </p>
-          <a href="#about" onClick={handleScrollToAbout}>
+          <a onClick={handleScrollToAbout}>
             <Button>Learn more</Button>
           </a>
         </div>

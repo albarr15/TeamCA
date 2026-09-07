@@ -1,7 +1,7 @@
 ---
 import "@/styles/global.css";
 import MainLayout from "@/layouts/MainLayout.tsx";
-import CoreSolutions from "@/components/sections/services/CoreSolutions";
+import CoreSolutions from "@/components/sections/services/CoreSolutions.astro";
 import ServicesGridSection from "@/components/sections/services/ServicesGridSection.astro";
 
 import CTA from "@/components/sections/home/CTA";
@@ -141,7 +141,7 @@ const corporateSolutions = [
         heading="Comprehensive Coverage, Tailored to Your Life"
         description="We help individuals build financial security and businesses protect their people and assets, with services ranging from critical illness protection to employee retirement funding."
         primaryButtonText="Browse Services"
-        primaryButtonHref="#core-solutions"
+        primaryButtonHref="core-solutions"
         image={{
           src: "/images/services/resume-genius-IESB4iFVuzA-unsplash (1).jpg",
           alt: "Insurance advisor meeting with client",
@@ -152,11 +152,13 @@ const corporateSolutions = [
         heading="Personal / Individual Insurance"
         description="Comprehensive coverage designed to protect your family, your income, and your future — every step of the way."
         solutions={personalSolutions}
+        id="personal-insurance"
       />
       <ServicesGridSection
         heading="Organization / Corporate Insurance"
         description="Support your employees, safeguard your leadership, and invest in your company's growth with solutions built for business."
         solutions={corporateSolutions}
+        id="corporate-insurance"
       />
       <CTA />
     </MainLayout>
