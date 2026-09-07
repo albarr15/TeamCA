@@ -13,7 +13,7 @@ export const card = tv({
       md: "[--card-spacing:--spacing(5)]",
     },
     interactive: {
-      true: "transition-all duration-300 hover:-translate-y-2 hover:bg-card/90 hover:shadow-xl cursor-pointer",
+      true: "transition-all duration-300 hover:-translate-y-2 hover:bg-card hover:shadow-xl cursor-pointer",
       false: "",
     },
   },

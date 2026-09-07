@@ -102,6 +102,18 @@
       "version": "2.1.0",
       "framework": "astro",
       "registry": "default"
+    },
+    {
+      "name": "aspect-ratio",
+      "version": "1.1.0",
+      "framework": "astro",
+      "registry": "default"
+    },
+    {
+      "name": "badge",
+      "version": "1.5.0",
+      "framework": "astro",
+      "registry": "default"
     }
   ],
   "tailwind": {
