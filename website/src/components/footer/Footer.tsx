@@ -4,13 +4,14 @@ import { config } from "@/config/env";
 import { Mail } from "lucide-react";
 
 const Footer: React.FC = () => {
+  // TODO: Update logo and alt text to reflect maperaang pilipino brand
   return (
     <div className="bg-[--dark-primary]">
       <footer className="bg-[--primary-color] rounded-t-2xl overflow-hidden shadow-2xl mx-auto max-w-full">
         <div className="px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex flex-col md:flex-row justify-between gap-8 md:gap-12">
             {/* Column 1 */}
-            <div className="w-full md:w-3/5 flex flex-col">
+            <div className="w-full md:w-1/4 flex flex-col">
               <div className="flex items-center mb-4">
                 <img
                   src="/icons/teamca-transparent-logo-1.png"
@@ -18,7 +19,7 @@ const Footer: React.FC = () => {
                   className="w-12 h-12 mr-3 rounded-full"
                 />
                 <h3 className="text-xl font-semibold !text-white">
-                  Team CA
+                  Maperaang Pilipino by Ann De Leon
                 </h3>
               </div>
               <p className="text-[--white-color] text-sm max-w-md leading-relaxed">
@@ -27,19 +28,42 @@ const Footer: React.FC = () => {
               </p>
             </div>
 
-            {/* Services & Company */}
-            <div className="w-full md:w-2/5 flex flex-row justify-between sm:justify-start sm:gap-16 md:justify-around">
-              <div>
+            <div className="w-full md:w-3/4 flex flex-col sm:flex-row gap-8 justify-between sm:justify-start sm:gap-16 md:justify-around">
+              <div className="w-full sm:w-1/2">
                 <h3 className="text-xl font-semibold mb-4 !text-white">
-                  Services
+                  Personal / Individual Services
                 </h3>
-                <ul className="space-y-2 text-sm">
-                  <li>Life Insurance</li>
-                  <li>Financial Planning</li>
-                  <li>Investment Advice</li>
-                  <li>Retirement Planning</li>
-                  <li>Education Planning</li>
-                </ul>
+                <div className="flex gap-8">
+                  <ul className="space-y-2 text-sm">
+                    <li>Family Protection</li>
+                    <li>Income Protection / Replacement</li>
+                    <li>Critical Illness Funding / Protection</li>
+                    <li>Retirement Planning</li>
+                  </ul><ul className="space-y-2 text-sm">
+                    <li>Education Funding</li>
+                    <li>Mortgage Redemption Insurance</li>
+                    <li>Estate Planning</li>
+                    <li>Legacy Savings</li>
+                    <li>Short to Long Term Investments Planning</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="w-full sm:w-1/2">
+                <h3 className="text-xl font-semibold mb-4 !text-white">
+                  Organization / Corporate Services
+                </h3>
+                <div className="flex gap-8">
+                  <ul className="space-y-2 text-sm">
+                    <li>Employee Benefits</li>
+                    <li>Enhancement of Current Medical Benefits</li>
+                    <li>Executive Benefits / Keyman Insurance</li>
+                  </ul><ul className="space-y-2 text-sm">
+                    <li>Corporate Investments</li>
+                    <li>Business Protection (Buy-Sell Agreement)</li>
+                    <li>Employee Retirement Funder</li>
+                  </ul>
+                </div>
               </div>
 
               {/* Company */}
@@ -72,14 +96,7 @@ const Footer: React.FC = () => {
                       Careers
                     </a>
                   </li>
-                  <li>
-                    <a
-                      href={config.frontendUrl}
-                      className="hover:underline"
-                    >
-                      Internal Login
-                    </a>
-                  </li>
+
                 </ul>
               </div>
             </div>
@@ -90,7 +107,7 @@ const Footer: React.FC = () => {
           {/* Bottom */}
           <div className="mt-12 border-t border-white/20 pt-6 flex flex-col md:flex-row justify-between items-center text-sm">
             <p>
-              &copy; {new Date().getFullYear()} Team CA. All rights reserved.
+              &copy; {new Date().getFullYear()} Maperaang Pilipino by Ann De Leon. All rights reserved.
             </p>
 
             {/* Socials */}
@@ -117,16 +134,6 @@ const Footer: React.FC = () => {
           </div>
         </div>
       </footer>
-
-      {/* GOOGLE MAPS FULL WIDTH SECTION */}
-      {/* <div className="w-full">
-        <iframe
-          title="Google Map"
-          src="https://www.google.com/maps?q=Quezon+City,+Philippines&output=embed"
-          className="w-full h-[350px] border-0"
-          loading="lazy"
-        ></iframe>
-      </div> */}
     </div>
   );
 };
